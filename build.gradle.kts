@@ -7,7 +7,6 @@
 plugins {
     `java-library`
     `maven-publish`
-    idea
 
     // Use Mojang mappings and a few other PaperAPI QOL.
     id("io.papermc.paperweight.userdev") version "1.5.5"
@@ -29,10 +28,10 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.20.1-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("1.20.2-R0.1-SNAPSHOT")
 
-    implementation("org.jetbrains:annotations:23.0.0")
-    compileOnly("org.projectlombok:lombok:1.18.24")
+    implementation("org.jetbrains:annotations:24.0.1")
+    compileOnly("org.projectlombok:lombok:1.18.26")
 }
 
 group = "com.itsschatten"
