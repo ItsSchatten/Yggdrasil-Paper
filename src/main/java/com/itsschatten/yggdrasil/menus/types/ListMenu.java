@@ -128,7 +128,7 @@ public abstract class ListMenu<T> extends StandardMenu {
         resetButtons();
         registerPreMadeButtons(); // Must be called here as the Menu doesn't have this method.
 
-        if (getPlaceablePositions().size() > 0) {
+        if (!getPlaceablePositions().isEmpty()) {
             for (int i = 0; i < getPlaceablePositions().size(); i++) {
                 // Used because of inner classes.
                 final int finalI = i;
@@ -293,5 +293,4 @@ public abstract class ListMenu<T> extends StandardMenu {
     public final List<T> getValues() {
         return list;
     }
-
 }

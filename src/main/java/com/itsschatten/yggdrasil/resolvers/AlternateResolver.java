@@ -236,7 +236,7 @@ public class AlternateResolver implements Modifying, Examinable {
         }
 
         this.disableApplyingColorDepth = -1;
-        if (current instanceof final TextComponent textComponent && ((TextComponent) current).content().length() > 0) {
+        if (current instanceof final TextComponent textComponent && !((TextComponent) current).content().isEmpty()) {
             final String content = textComponent.content();
 
             final TextComponent.Builder parent = Component.text();

@@ -7,6 +7,8 @@ import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.Objects;
+
 /**
  * Utility class that allows a BukkitTask to be reinitialized after it has been canceled.
  */
@@ -23,8 +25,9 @@ public abstract class ReschedulableTask implements Runnable {
 
     /**
      * Standard implementation.
+     *
      * @param delay The delay for this task.
-     * @param type What type of task this is?
+     * @param type  What type of task this is?
      */
     public ReschedulableTask(long delay, Type type) {
         this.delay = delay;
@@ -49,6 +52,7 @@ public abstract class ReschedulableTask implements Runnable {
             try {
                 this.run();
             } catch (Exception ex) {
+                Utils.logError(ex);
                 this.cancel();
             }
         }, 1, delay);
@@ -71,6 +75,29 @@ public abstract class ReschedulableTask implements Runnable {
             setCancelled(false);
             register();
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ReschedulableTask that = (ReschedulableTask) o;
+        return delay == that.delay && isCancelled() == that.isCancelled() && getType() == that.getType() && Objects.equals(task, that.task);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(delay, getType(), task, isCancelled());
+    }
+
+    @Override
+    public String toString() {
+        return "ReschedulableTask{" +
+                "delay=" + delay +
+                ", type=" + type +
+                ", task=" + task +
+                ", cancelled=" + cancelled +
+                '}';
     }
 
     /**

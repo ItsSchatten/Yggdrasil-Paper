@@ -1,6 +1,7 @@
 package com.itsschatten.yggdrasil.wands;
 
 import com.itsschatten.yggdrasil.Utils;
+import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,12 +23,24 @@ public class WandListeners implements Listener {
 
     /**
      * A map to store the first point locations.
+     * -- GETTER --
+     *  Gets the first location map that belongs to this listener.
+     *
+     * @return Returns the {@link #firstLocationMap}
+
      */
+    @Getter
     public static Map<UUID, Location> firstLocationMap;
 
     /**
      * A map to store the second point locations.
+     * -- GETTER --
+     *  Gets the second location map that belongs to this listener.
+     *
+     * @return Returns the {@link #secondLocationMap}
+
      */
+    @Getter
     public static Map<UUID, Location> secondLocationMap;
 
     /**
@@ -36,24 +49,6 @@ public class WandListeners implements Listener {
     public WandListeners() {
         firstLocationMap = new HashMap<>();
         secondLocationMap = new HashMap<>();
-    }
-
-    /**
-     * Gets the first location map that belongs to this listener.
-     *
-     * @return Returns the {@link #firstLocationMap}
-     */
-    public static Map<UUID, Location> getFirstLocationMap() {
-        return firstLocationMap;
-    }
-
-    /**
-     * Gets the second location map that belongs to this listener.
-     *
-     * @return Returns the {@link #secondLocationMap}
-     */
-    public static Map<UUID, Location> getSecondLocationMap() {
-        return secondLocationMap;
     }
 
     /**

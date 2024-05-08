@@ -31,6 +31,11 @@ public abstract class SimpleButton extends Button {
             public InventoryPosition getPosition() {
                 return button.getPosition();
             }
+
+            @Override
+            public InventoryPosition[] getPositions() {
+                return button.getPositions();
+            }
         };
     }
 
@@ -53,6 +58,11 @@ public abstract class SimpleButton extends Button {
             @Override
             public InventoryPosition getPosition() {
                 return button.getPosition();
+            }
+
+            @Override
+            public InventoryPosition[] getPositions() {
+                return button.getPositions();
             }
         };
     }

@@ -1,11 +1,12 @@
 package com.itsschatten.yggdrasil.menus.utils;
 
 
-import com.itsschatten.yggdrasil.IMenuHolderManager;
 import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.menus.Menu;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
+
+import java.util.UUID;
 
 /**
  * Represents a holder for a Menu.
@@ -13,6 +14,11 @@ import org.bukkit.entity.Player;
  * This is implemented inside the PrisonCore project, other projects should not extend this class and instead should use an available instance via {@link IMenuHolderManager}.
  */
 public interface IMenuHolder {
+
+    /**
+     * @return The UUID of the base {@link Player}.
+     */
+    UUID getUniqueID();
 
     /**
      * @return The base {@link Player}.

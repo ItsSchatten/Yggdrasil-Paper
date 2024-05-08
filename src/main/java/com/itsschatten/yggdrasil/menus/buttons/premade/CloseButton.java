@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -46,7 +47,7 @@ public final class CloseButton extends Button {
 
     @Override
     public void onClicked(@NotNull IMenuHolder user, Menu menu, ClickType type) {
-        user.getBase().closeInventory();
+        user.getBase().closeInventory(InventoryCloseEvent.Reason.PLAYER);
         if (type == ClickType.NUMBER_KEY) {
             Bukkit.getScheduler().runTaskLater(Utils.getInstance(), () -> user.getBase().updateInventory(), 15);
         }

@@ -17,16 +17,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Utility class for {@link String}s.
  */
 @UtilityClass
 public class StringUtil {
+
+    private static final List<TagResolver> ADDITIONAL_RESOLVERS = new ArrayList<>();
 
     /**
      * Money format.
@@ -39,11 +38,6 @@ public class StringUtil {
     private static final DecimalFormat OTHER_BALANCE_FORMAT;
 
     /**
-     * Date format.
-     */
-    private static final SimpleDateFormat DATE_FORMAT;
-
-    /**
      * Array of roman numerals.
      */
     private static final String[] ROMAN_NUMERALS;
@@ -52,44 +46,36 @@ public class StringUtil {
      */
     private static final int[] ROMAN_NUMERAL_VALUES;
 
-    /**
-     * Full date format.
-     */
-    private static final SimpleDateFormat FULL_DATE_FORMAT;
-    private static final Pattern COLOR_PATTERN;
-
-
+    //<editor-fold defaultstate="collapsed" desc="Static initialization.">
     static {
-        COLOR_PATTERN = Pattern.compile("<#[a-f0-9]{6}>|<(black|dark_blue|dark_green|dark_aqua|dark_red|dark_purple|gold|gray|grey|dark_gray|dark_grey|blue|green|aqua|red|light_purple|yellow|white)>", Pattern.CASE_INSENSITIVE);
         BALANCE_FORMAT = new DecimalFormat("#,###,###,###.##");
         BALANCE_FORMAT.setCurrency(Currency.getInstance(Locale.US));
         BALANCE_FORMAT.setMaximumFractionDigits(2);
         BALANCE_FORMAT.setMinimumFractionDigits(2);
+
         OTHER_BALANCE_FORMAT = new DecimalFormat("#,###,###,###");
 
         ROMAN_NUMERAL_VALUES = new int[]{100, 90, 50, 40, 10, 9, 5, 4, 1};
         ROMAN_NUMERALS = new String[]{"C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"}; // Lists roman numerals from the greatest to the least.
+    }
+    //</editor-fold>
 
-        DATE_FORMAT = new SimpleDateFormat("MMM'.' dd 'at' h:mm a");
-        FULL_DATE_FORMAT = new SimpleDateFormat("MMM'.' dd yyyy 'at' h:mm a");
+    /**
+     * Add the provided resolver to {@link #ADDITIONAL_RESOLVERS}, so they can be used in {@link #color(String)}
+     *
+     * @param resolver The resolvers to add.
+     */
+    public static void addResolvers(final TagResolver... resolver) {
+        ADDITIONAL_RESOLVERS.addAll(List.of(resolver));
     }
 
     /**
-     * Used to get the date format.
+     * Add the provided resolver to {@link #ADDITIONAL_RESOLVERS}, so they can be used in {@link #color(String)}
      *
-     * @return {@link #DATE_FORMAT}
+     * @param resolver The resolvers to add.
      */
-    public static SimpleDateFormat getDateFormat() {
-        return DATE_FORMAT;
-    }
-
-    /**
-     * Used to get the full date format.
-     *
-     * @return {@link #FULL_DATE_FORMAT}
-     */
-    public static SimpleDateFormat getFullDateFormat() {
-        return FULL_DATE_FORMAT;
+    public static void addResolvers(final Collection<TagResolver> resolver) {
+        ADDITIONAL_RESOLVERS.addAll(resolver);
     }
 
     /**
@@ -117,7 +103,7 @@ public class StringUtil {
     }
 
     /**
-     * Formats a double into an easier to read number, removing excess decimal places.
+     * Formats a double into a more easy to read number, removing excess decimal places.
      *
      * @param number The number to format.
      * @return The formatted number in as a String.
@@ -130,7 +116,7 @@ public class StringUtil {
     }
 
     /**
-     * Format a number in a more easy to read format.
+     * Format a number in a more easy-to-read format.
      *
      * @param number The double we are formatting.
      * @return A String in a properly formatted way.
@@ -152,7 +138,7 @@ public class StringUtil {
     }
 
     /**
-     * Format a number in an easier to read format.
+     * Format a number in a more easy-to-read format.
      *
      * @param number The double we are formatting.
      * @param color  The color of the letter.
@@ -175,28 +161,7 @@ public class StringUtil {
     }
 
     /**
-     * Attempts to color a {@link String}.
-     * <p>
-     * To color a string with normal Minecraft colors:
-     * <code>{@literal &[a-f0-9]Your string here.}</code>
-     * <p>
-     * To color a string with hex colors:
-     * <code>{@literal &#333aaaYour string here.}</code>
-     * <p>
-     * To apply a gradient to a string:
-     * <code>{@literal &$#eee00fYour string here&$#ddd999.}</code>
-     * <p>
-     * It is best practice, to apply the last color one character
-     * before the end of the String in order to get the full colors.
-     * <p>
-     * To alternate colors use <code>{@literal <a:5|4|a|#445522|b;>Your string here.}</code>
-     * This does support alternate color codes.
-     * <p>
-     * To apply rainbow to a string:
-     * <code>{@literal <rainbow>Your rainbow string here.</rainbow>}</code> or
-     * {@code <dark_rainbow>Your rainbow string here.</dark_rainbow>}<p>
-     * It should be noted that this likely works best with longer strings; shorter strings may not contain
-     * all colors of the rainbow.
+     * Utility method to quickly format a message using {@link MiniMessage} formatting.
      *
      * @param message The message we are attempting to color.
      * @return The colored String.
@@ -209,7 +174,8 @@ public class StringUtil {
 
         message = ColorCodeConverter.replace(message);
 
-        return MiniMessage.miniMessage().deserialize(message, TagResolver.builder().resolvers(StandardTags.defaults(), DarkRainbowResolver.RESOLVER, AlternateResolver.RESOLVER).build());
+        return MiniMessage.miniMessage().deserialize(message,
+                TagResolver.builder().resolvers(StandardTags.defaults(), DarkRainbowResolver.RESOLVER, AlternateResolver.RESOLVER).resolvers(ADDITIONAL_RESOLVERS).build());
     }
 
     /**
@@ -224,6 +190,21 @@ public class StringUtil {
      */
     public static @NotNull String getProgressBar(final double currentValue, final double maxValue, final char character, final @NotNull TextColor progressColor, final @NotNull TextColor noProgressColor) {
         final int totalBars = 30;
+        return createBar(currentValue, maxValue, character, progressColor, noProgressColor, totalBars);
+    }
+
+    /**
+     * Quickly creates the bar string for {@link #getProgressBar(double, double, char, TextColor, TextColor)} and {@link #getProgressBar(int, double, double, char, TextColor, TextColor)}.
+     *
+     * @param currentValue    The current value for the progress.
+     * @param maxValue        The maximum progress.
+     * @param character       The character to use for the bar.
+     * @param progressColor   The color for progress.
+     * @param noProgressColor The no progress color.
+     * @param totalBars       How many total bars we want to put
+     * @return Returns a new string, formatted with MiniMessage formatting.
+     */
+    private static @NotNull String createBar(double currentValue, double maxValue, char character, @NotNull TextColor progressColor, @NotNull TextColor noProgressColor, int totalBars) {
         final double percent = currentValue / maxValue;
         final int progressBars = (int) (totalBars * percent);
 
@@ -243,176 +224,7 @@ public class StringUtil {
      * @return The colored progress bar.
      */
     public static @NotNull String getProgressBar(final int totalBars, final double currentValue, final double maxValue, final char character, final @NotNull TextColor progressColor, final @NotNull TextColor noProgressColor) {
-        final double percent = currentValue / maxValue;
-        final int progressBars = (int) (totalBars * percent);
-
-        return "<" + progressColor.asHexString() + ">" + StringUtils.repeat(String.valueOf(character), Math.min(progressBars, totalBars)) + "<" + noProgressColor.asHexString() + ">" + StringUtils.repeat(String.valueOf(character), totalBars - progressBars);
-    }
-
-    /**
-     * Converts a {@link String} into a {@link List} of strings.
-     * <p>Default words of 8 and a default color of gray.</p>
-     *
-     * @param string The {@link String} to convert into a {@link List}
-     * @return Returns an {@link ArrayList} of {@link String}s.
-     */
-    @Contract("_ -> new")
-    public static @NotNull List<String> convertStringToList(final String string) {
-        return convertStringToList(string, null, 8);
-    }
-
-    /**
-     * Converts a {@link String} into a {@link List} of strings.
-     * <p>Default words of 8.</p>
-     *
-     * @param string       The {@link String} to convert into a {@link List}
-     * @param defaultColor The color that is used as the reset color and the default color of the {@link String}s.
-     * @return Returns an {@link ArrayList} of {@link String}s.
-     */
-    @Contract("_, _ -> new")
-    public static @NotNull List<String> convertStringToList(final String string, final String defaultColor) {
-        return convertStringToList(string, defaultColor, 8);
-    }
-
-    /**
-     * Converts a {@link String} into a {@link List} of strings.
-     * <p>Default color of gray.</p>
-     *
-     * @param string The {@link String} to convert into a {@link List}
-     * @param words  The words of each line in the list.
-     * @return Returns an {@link ArrayList} of {@link String}s.
-     */
-    @Contract("_, _ -> new")
-    public static @NotNull List<String> convertStringToList(final String string, final int words) {
-        return convertStringToList(string, null, words);
-    }
-
-    /**
-     * Converts a {@link String} into a {@link List} of strings.
-     *
-     * @param string       The {@link String} to convert into a {@link List}
-     * @param defaultColor The color that is used as the reset color and the default color of the {@link String}s. Default to {@code <gray>}
-     * @param words        The words of each line in the list.
-     * @return Returns an {@link ArrayList} of {@link String}s.
-     */
-    @Contract("_, _, _ -> new")
-    public static @NotNull List<String> convertStringToList(final @NotNull String string, String defaultColor, final int words) {
-        // If default is returned null, set to light gray.
-        if (defaultColor == null) {
-            defaultColor = "<gray>";
-        }
-
-        // Split a string on any spaces and convert to an iterator.
-        // Also replace any reset strings to the default color and replace new line tokens with an internal <nl>
-        final Iterator<String> splitWords = Arrays.stream(string.replace("<reset>", defaultColor).replace("\\n", "<nl>").replace("\n", "<nl>").split("\\s+")).iterator();
-        // Our finalized list of strings that will be sent instead.
-        final List<String> finalList = new ArrayList<>();
-
-        // String builder used to build a string containing the provided number of words.
-        final StringBuilder builder = new StringBuilder(defaultColor);
-        // Used if there was a last word on a splittable line.
-        String builderStart = null;
-
-        // The current word count we are at, incremented in while loop.
-        int wordCount = 1;
-        while (splitWords.hasNext()) {
-            // Our current word.
-            final String word = splitWords.next();
-            // Check if word count is equal to our wanted words.
-            if (wordCount == words) {
-                // Add the builder to the list.
-                addStringToList(defaultColor, finalList, builder);
-
-                // Reset the builder.
-                builder.setLength(0);
-                // Check if there was a previous word, if so add it.
-                if (builderStart != null && !builderStart.isBlank()) {
-                    builder.append(getLastUsedColor(word).isBlank() ? defaultColor : getLastUsedColor(word)).append(builderStart).append(" ");
-                    builderStart = null;
-                }
-                // Reset word count.
-                wordCount = 1;
-            }
-
-            // Append the word and a space.
-            builder.append(word).append(" ");
-
-            // If the word contains a new line
-            if (word.contains("<nl>")) {
-                // Split the word on the new line.
-                final String[] splitter = word.split("<nl>");
-                // Get the last word.
-                if (splitter[splitter.length - 1] != null && !splitter[splitter.length - 1].isBlank()) {
-                    // Add the last word to the builderStart to be appended first to the builder.
-                    builderStart = (getLastUsedColor(word).isBlank() ? defaultColor : getLastUsedColor(word)) + splitter[splitter.length - 1];
-                    // Delete the last word from the builder.
-                    builder.delete(builder.toString().indexOf(splitter[splitter.length - 1]), builder.length());
-                }
-                // Set the word count to max, so it is forced to insert it into the list.
-                wordCount = words;
-            } else {
-                wordCount++;
-            }
-
-            if (!splitWords.hasNext()) {
-                if (builderStart != null && builderStart.length() != 0) {
-                    builder.append(builderStart);
-                }
-
-                addStringToList(defaultColor, finalList, builder);
-            }
-        }
-        return finalList;
-    }
-
-    private static void addStringToList(String defaultColor, List<String> finalList, @NotNull StringBuilder builder) {
-        final String[] finalWords = builder.toString()
-                .replace("<nl>", "\n")
-                .replace("\\s", " ")
-                // Look behind my beloved.
-                .split(Pattern.compile("(?<=\n)", Pattern.CASE_INSENSITIVE).pattern());
-
-        // Words to add.
-        final List<String> tempList = new ArrayList<>();
-        // The last used color.
-        String lastColorString = null;
-        // Loop the words.
-        for (final String finalWord : finalWords) {
-            tempList.add(((lastColorString != null ? (getLastUsedColor(lastColorString).isBlank() ? defaultColor : getLastUsedColor(lastColorString)) : "") +
-                    (finalWord.equalsIgnoreCase("<nl>") ? "" : finalWord.strip())));
-            lastColorString = finalWord;
-        }
-
-        finalList.addAll(tempList);
-    }
-
-    /**
-     * Returns the last used colors in a string, this will default to gray if none is found.
-     *
-     * @param string A String
-     * @return Returns a {@link String} with the last used color.
-     */
-    public static @NotNull String getLastUsedColor(@NotNull String string) {
-        return getLastUsedColor(string, "<gray>");
-    }
-
-    /**
-     * Returns the last used colors in a string.
-     *
-     * @param string A String
-     * @param color  The default final color.
-     * @return Returns a {@link String} with the last used color.
-     */
-    public static @NotNull String getLastUsedColor(@NotNull String string, final String color) {
-        final Matcher matcher = COLOR_PATTERN.matcher(string);
-
-        String finalColor = color;
-
-        while (matcher.find()) {
-            finalColor = matcher.group();
-        }
-
-        return finalColor;
+        return createBar(currentValue, maxValue, character, progressColor, noProgressColor, totalBars);
     }
 
     /**
@@ -432,7 +244,7 @@ public class StringUtil {
      *
      * @param location       Location to prettify.
      * @param numberColor    The color that should be used for the numbers.
-     * @param separatorColor The color that should be used for the ','
+     * @param separatorColor The color that should be used for the comma.
      * @param bracketColor   The color for the parenthesis.
      * @return A new {@link String} supplied with color codes.
      */
@@ -518,13 +330,12 @@ public class StringUtil {
      * @param addSpaceToFront Should we prepend a single space before returning the final string?
      * @return A string containing proper roman numeral equivalent to passed number.
      */
-    public static @NotNull String convertToRomanNumeral(int number, boolean ignoreLevelOne,
-                                                        boolean addSpaceToFront) {
-        if (number == 1 && ignoreLevelOne) {
+    public static @NotNull String convertToRomanNumeral(int number, boolean ignoreLevelOne, boolean addSpaceToFront) {
+        if (number == 0) {
             return "";
         }
 
-        if (number == 0) {
+        if (number == 1 && ignoreLevelOne) {
             return "";
         }
 
@@ -540,7 +351,7 @@ public class StringUtil {
     }
 
     /**
-     * Utility method to quickly ignore a 1 number.
+     * Utility method to quickly ignore a one number.
      *
      * @param number          The number we want to convert.
      * @param addSpaceToFront Should we add a space?

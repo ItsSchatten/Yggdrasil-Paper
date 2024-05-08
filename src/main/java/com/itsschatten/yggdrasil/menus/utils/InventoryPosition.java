@@ -27,7 +27,7 @@ public record InventoryPosition(@Range(from = 0, to = 5) int row, @Range(from = 
             of(4, 1), of(4, 2), of(4, 3), of(4, 4), of(4, 5), of(4, 6), of(4, 7));
 
     /**
-     * List of all edge positions, ignoring the top and bottom edge cells.
+     * List of all edge positions, ignoring the top and bottom-edge cells.
      */
     public static ImmutableList<InventoryPosition> edgePositions = ImmutableList.of(
             of(0, 0), of(1, 0), of(2, 0),
@@ -60,6 +60,28 @@ public record InventoryPosition(@Range(from = 0, to = 5) int row, @Range(from = 
         }
 
         return toSend;
+    }
+
+    /**
+     * Create an inventory slot based on the slot number.
+     *
+     * @param slot A slot in the range of 0 -> 53.
+     * @return Returns a new inventory position.
+     */
+    @Contract("_ -> new")
+    public static @NotNull InventoryPosition fromSlot(@Range(from = 0, to = 53) int slot) {
+        return fromAnySlot(slot);
+    }
+
+    /**
+     * Create an inventory slot based on the slot number.
+     *
+     * @param slot A slot.
+     * @return Returns a new inventory position.
+     */
+    @Contract("_ -> new")
+    public static @NotNull InventoryPosition fromAnySlot(int slot) {
+        return InventoryPosition.of(slot / 9, slot % 9);
     }
 
     @Contract(pure = true)

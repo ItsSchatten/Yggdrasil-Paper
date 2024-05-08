@@ -1,19 +1,21 @@
 package com.itsschatten.yggdrasil.commands;
 
-import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.IPermission;
 import com.itsschatten.yggdrasil.StringUtil;
+import com.itsschatten.yggdrasil.Utils;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.PluginIdentifiableCommand;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -83,6 +85,57 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
     }
 
     /**
+     * Gets the {@link SubCommandBase} {@link Set}.
+     *
+     * @return Return's a {@link HashSet} of all registered {@link SubCommandBase sub commands.}, aka returns the variable {@link #SUB_COMMANDS}.
+     */
+    public final Set<SubCommandBase> getSubCommands() {
+        return SUB_COMMANDS;
+    }
+
+    /**
+     * Returns a sorted {@link List} of all registered {@link SubCommandBase sub commands} description {@link String strings}.
+     *
+     * @return Returns a sorted list, generated from a stream.
+     */
+    public final List<String> getSubCommandDescriptions() {
+        return SUB_COMMANDS.stream().sorted().map(SubCommandBase::description).filter(description -> !description.isEmpty()).toList();
+    }
+
+    /**
+     * Returns a sorted {@link List} of all registered {@link SubCommandBase sub commands} description {@link Component components}.
+     *
+     * @return Returns a sorted list, generated from a stream.
+     */
+    public final List<Component> getSubCommandDescriptionComponents() {
+        return SUB_COMMANDS.stream().sorted().filter((cmd) -> {
+            if (cmd.descriptionComponent() instanceof TextComponent text) {
+                return !text.content().isEmpty();
+            }
+
+            return false;
+        }).map(SubCommandBase::descriptionComponent).toList();
+    }
+
+    /**
+     * Sends the help message with all sub commands.
+     *
+     * @param start The message to send first.
+     */
+    public final void sendHelpMessage(final String start) {
+        sendHelpMessage(StringUtil.color(start));
+    }
+
+    /**
+     * Sends the help message with all sub commands.
+     *
+     * @param component The component to send first.
+     */
+    public final void sendHelpMessage(final Component component) {
+        tell(component, getSubCommandDescriptionComponents());
+    }
+
+    /**
      * Used to run the command for an unspecific command sender.
      *
      * @param sender The sender of the command.
@@ -96,7 +149,9 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
      * @param player The player that issued this command.
      * @param args   The arguments for the command.
      */
-    public abstract void run(final Player player, final String[] args);
+    public void run(final Player player, final String[] args) {
+        runCommandSender(player, args);
+    }
 
     /**
      * Sets the permission for the command.
@@ -146,13 +201,14 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
                     final SubCommandBase subCommand = getSubCommand(args[0]);
                     if (subCommand != null && subCommand.testPermission(commandSender)) {
                         // Execute the subcommand.
-                        subCommand.execute(commandSender, StringUtils.join(args, ' ', 1, args.length).split(" "));
+                        subCommand.execute(commandSender, Arrays.copyOfRange(args, 1, args.length));
                         return true;
                     }
                 }
 
                 if (commandSender instanceof Player player) { // Check if the sender is a player.
-                    run(player, args); // If so pass a player object to allow easier access to player with safe casting already done.
+                    run(player, args);
+                    // If so, pass a player object to allow easier access to player with safe casting already done.
                 } else
                     runCommandSender(commandSender, args); // If not a player execute the command as a normal command sender.
             } catch (final ReturnedCommandException ex) {
@@ -217,9 +273,29 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
      * Sends a message to the sender of the command.
      *
      * @param message  The message to send.
-     * @param messages An array of Strings that will be sent to the player, not required for this method to function.
+     * @param messages An array of {@link Component components} that will be sent to the player, not required for this method to function.
      */
     protected void tell(Component message, Component... messages) {
+        Utils.tell(commandSender, message, messages);
+    }
+
+    /**
+     * Sends a message to the sender of the command.
+     *
+     * @param message  The message to send.
+     * @param messages An iterable of Strings that will be sent to the player, not required for this method to function.
+     */
+    protected void tell(String message, Iterable<String> messages) {
+        Utils.tell(commandSender, message, messages);
+    }
+
+    /**
+     * Sends a message to the sender of the command.
+     *
+     * @param message  The message to send.
+     * @param messages An iterable of {@link Component components} that will be sent to the player, not required for this method to function.
+     */
+    protected void tell(Component message, Iterable<Component> messages) {
         Utils.tell(commandSender, message, messages);
     }
 
@@ -331,7 +407,7 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
     /**
      * Utility method to check a permission for the {@link CommandSender} of this command.
      * <p>
-     * If the player doesn't have the permission it will also send a message to the sender of the command with the {@link #getPermissionMessage()} of this command.
+     * If the player doesn't have the permission it will also send a message to the sender of the command with the {@link #permissionMessage(String)} of this command.
      *
      * @param permission The {@link IPermission} to check for this player.
      * @return <code>true</code> if the player has permission, <code>false</code> otherwise.
@@ -463,6 +539,20 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
         return number;
     }
 
+    /**
+     * Forcefully send all subcommands for this command.
+     * If the {@link #commandSender} lacks permission to use a subcommand it is shown in red and italic.
+     */
+    public final void forceSendSubCommands() {
+        returnTell("<gray>" + StringUtils.join(SUB_COMMANDS.stream().sorted().map((command) -> (command.testPermission(commandSender) ? "" : "<red><i>") + command.getId() + (command.testPermission(commandSender) ? "" : "</red></i>")).toList(), "<dark_gray>,</dark_gray> "));
+    }
+
+    /**
+     * Sends all sub commands for this command that the {@link #commandSender} has permission for.
+     */
+    public final void sendSubcommands() {
+        returnTell("<gray>" + StringUtils.join(SUB_COMMANDS.stream().sorted().filter((command) -> command.testPermission(commandSender)).map(SubCommandBase::getId).toList(), "<dark_gray>,</dark_gray> "));
+    }
 
     /**
      * Used to pass tab complete for this command.
@@ -506,13 +596,40 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
             // Ensure that command is not null.
             if (command != null) {
                 // Add the sub-commands tab complete.
-                tab.addAll(command.getTabComplete(sender, StringUtils.join(args, ' ', 1, args.length).split(" ")));
+                tab.addAll(command.getTabComplete(sender, Arrays.copyOfRange(args, 1, args.length)));
             }
         }
 
         // Finally, add the general tab complete for this command.
         tab.addAll(getTabComplete(sender, alias, args));
         return tab;
+    }
+
+    @Override
+    public String toString() {
+        return "CommandBase{" +
+                "commandSender=" + commandSender +
+                ", args=" + Arrays.toString(args) +
+                ", commandLabel='" + commandLabel + '\'' +
+                ", SUB_COMMANDS=" + SUB_COMMANDS +
+                ", description='" + description + '\'' +
+                ", usageMessage='" + usageMessage + '\'' +
+                "} " + super.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CommandBase that = (CommandBase) o;
+        return Objects.equals(commandSender, that.commandSender) && Arrays.equals(args, that.args) && Objects.equals(commandLabel, that.commandLabel) && Objects.equals(SUB_COMMANDS, that.SUB_COMMANDS);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(commandSender, commandLabel, SUB_COMMANDS);
+        result = 31 * result + Arrays.hashCode(args);
+        return result;
     }
 
     /**

@@ -1,6 +1,5 @@
-package com.itsschatten.yggdrasil;
+package com.itsschatten.yggdrasil.menus.utils;
 
-import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -29,4 +28,25 @@ public interface IMenuHolderManager {
      * @see IMenuHolder
      */
     IMenuHolder getMenuHolder(final Player player);
+
+    /**
+     * Removes the provided player from the manager.
+     *
+     * @param player THe player we wish to remove.
+     * @return The removed instanceof {@link IMenuHolder}
+     * @see #getMenuHolder(UUID)
+     * @see IMenuHolder
+     */
+    IMenuHolder remove(final Player player);
+
+    /**
+     * Removes the provided player from the manager.
+     *
+     * @param uuid The player we wish to remove.
+     * @return The removed instanceof {@link IMenuHolder}
+     * @see #getMenuHolder(UUID)
+     * @see IMenuHolder
+     */
+    IMenuHolder remove(final UUID uuid);
+
 }

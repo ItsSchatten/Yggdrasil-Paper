@@ -44,7 +44,7 @@ public abstract class StandardMenu extends Menu {
     /**
      * Set the rows for this menu.
      *
-     * @param rows The amount of rows for the inventory.
+     * @param rows The number of rows for the inventory.
      */
     public void setRows(@Range(from = 1, to = 6) Integer rows) {
         this.rows = rows;
@@ -230,7 +230,7 @@ public abstract class StandardMenu extends Menu {
     /**
      * Should the info button be added to the menu?
      *
-     * @return If the lore for the button is not null and the length is greater than 0 the button will be shown.
+     * @return If the lore for the button is not null and the length is greater than 0, the button will be shown.
      */
     public boolean addInfo() {
         return getInfo() != null && getInfo().length != 0;
@@ -242,8 +242,8 @@ public abstract class StandardMenu extends Menu {
      * @return <code>false</code> by default
      * @deprecated May not work entirely due to how reflection works.
      */
-    @Deprecated
     @ApiStatus.Experimental
+    @Deprecated
     public boolean makeNewInstanceOfParent() {
         return false;
     }
@@ -269,5 +269,4 @@ public abstract class StandardMenu extends Menu {
     protected InventoryPosition getCloseButtonPosition() {
         return InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 1);
     }
-
 }

@@ -1,13 +1,14 @@
 package com.itsschatten.yggdrasil.commands;
 
 import com.itsschatten.yggdrasil.IPermission;
-import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.StringUtil;
+import com.itsschatten.yggdrasil.Utils;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -21,12 +22,12 @@ import java.util.stream.Collectors;
  *
  * @since 2.0.0
  */
-public abstract class SubCommandBase {
+public abstract class SubCommandBase implements Comparable<SubCommandBase> {
 
     /**
      * Permission required for this subcommand.
      * {@code <instance_name>.<owningCommand name>.<subcommand name>}
-     * {@code yggdrasil.gamemode.creative}
+     * Ex: {@code yggdrasil.gamemode.creative}
      */
     @Getter
     private final String permission;
@@ -49,6 +50,7 @@ public abstract class SubCommandBase {
     private String[] args;
 
     // The command that "owns" this subcommand.
+    // Mainly used in automatic permission creation and in obtaining the no permission message.
     private final CommandBase owningCommand;
 
     public SubCommandBase(final @NotNull String id, final List<String> aliases, final @NotNull CommandBase owningCommand) {
@@ -57,6 +59,7 @@ public abstract class SubCommandBase {
         this.owningCommand = owningCommand;
 
         // <instance name>.<owningCommand>.<subcommand>
+        // yggdrasil.gamemode.creative
         this.permission = Utils.getInstance().getName() + "." + owningCommand.getName() + "." + id;
     }
 
@@ -85,7 +88,6 @@ public abstract class SubCommandBase {
     protected final void execute(final CommandSender sender, final String[] args) {
         this.sender = sender;
         this.args = args;
-
         // Test permission.
         if (!testPermission(sender)) {
             return;
@@ -97,6 +99,47 @@ public abstract class SubCommandBase {
         } else {
             run(sender, args);
         }
+    }
+
+    /**
+     * The full command string, a utility method
+     * to quickly get the {@link CommandBase owning command} and the id of this {@link SubCommandBase}.
+     *
+     * @return Returns {@link CommandBase#getCommandLabel()} and the {@link #getId()}.
+     */
+    public final @NotNull String commandString() {
+        return "/" + this.owningCommand.getCommandLabel() + " " + getId();
+    }
+
+    /**
+     * A description of this {@link SubCommandBase}, used to send a full help message.
+     *
+     * @return By default returns an empty string.
+     * @implNote Implementations should use MiniMessage formatting to colorize the {@link String} and to provide other effects.
+     */
+    public String description() {
+        return "";
+    }
+
+    /**
+     * Converts {@link #description()} into an Adventure component, by default.
+     *
+     * @return Returns {@link StringUtil#color(String)} which converts a {@link String} into a {@link Component}
+     */
+    public Component descriptionComponent() {
+        return StringUtil.color(description());
+    }
+
+    /**
+     * Compares a {@link SubCommandBase} id.
+     *
+     * @param o the object to be compared.
+     * @return a negative integer, zero, or a positive integer as this object is less than,
+     * equal to, or greater than the specified object.
+     */
+    @Override
+    public int compareTo(@NotNull SubCommandBase o) {
+        return id.compareTo(o.getId());
     }
 
     /**
@@ -221,7 +264,7 @@ public abstract class SubCommandBase {
      * @return <code>null</code> if no found {@link Player}, otherwise a list of all found players matching the partial.
      */
     protected List<Player> matchPartialPlayers(final String partial) {
-        if (Bukkit.matchPlayer(partial).size() == 0) {
+        if (Bukkit.matchPlayer(partial).isEmpty()) {
             returnTell("<red>A player containing the partial '<yellow>" + partial + "<red>' could not be found!");
             return null;
         }
@@ -433,4 +476,30 @@ public abstract class SubCommandBase {
         return Collections.emptyList();
     }
 
+    @Override
+    public String toString() {
+        return "SubCommandBase{" +
+                "permission='" + permission + '\'' +
+                ", id='" + id + '\'' +
+                ", aliases=" + aliases +
+                ", sender=" + sender +
+                ", args=" + Arrays.toString(args) +
+                ", owningCommand=" + owningCommand +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SubCommandBase that = (SubCommandBase) o;
+        return Objects.equals(permission, that.permission) && Objects.equals(id, that.id) && Objects.equals(aliases, that.aliases) && Objects.equals(sender, that.sender) && Arrays.equals(args, that.args) && Objects.equals(owningCommand, that.owningCommand);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(permission, id, aliases, sender);
+        result = 31 * result + Arrays.hashCode(args);
+        return result;
+    }
 }

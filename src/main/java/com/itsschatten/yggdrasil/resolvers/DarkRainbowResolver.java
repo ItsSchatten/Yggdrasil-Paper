@@ -121,7 +121,7 @@ public class DarkRainbowResolver implements Modifying, Examinable {
         }
 
         this.disableApplyingColorDepth = -1;
-        if (current instanceof final TextComponent textComponent && ((TextComponent) current).content().length() > 0) {
+        if (current instanceof final TextComponent textComponent && !((TextComponent) current).content().isEmpty()) {
             final String content = textComponent.content();
 
             final TextComponent.Builder parent = Component.text();
@@ -157,7 +157,7 @@ public class DarkRainbowResolver implements Modifying, Examinable {
                     reversed = true;
                     value = value.substring(REVERSE.length());
                 }
-                if (value.length() > 0) {
+                if (!value.isEmpty()) {
                     try {
                         phase = Integer.parseInt(value);
                     } catch (final NumberFormatException ex) {

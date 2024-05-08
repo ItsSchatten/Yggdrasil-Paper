@@ -9,6 +9,9 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  * Represents a button for a {@link Menu}
  */
@@ -58,6 +61,16 @@ public abstract class Button {
     public abstract InventoryPosition getPosition();
 
     /**
+     * Positions for this button.
+     *
+     * @return An array of {@link InventoryPosition} instances.
+     * @see InventoryPosition
+     */
+    public InventoryPosition[] getPositions() {
+        return null;
+    }
+
+    /**
      * The permission required to click this button.
      *
      * @return An {@link IPermission}.
@@ -69,6 +82,6 @@ public abstract class Button {
 
     @Override
     public String toString() {
-        return "Button{item=" + getItem() + ", position=" + (getPosition() == null ? "null" : getPosition().toString()) + "}";
+        return "Button{item=" + getItem() + ", positions=" + (getPositions() == null ? (getPosition() == null ? "all null" : getPosition().toString()) : Arrays.toString(getPositions())) + "}";
     }
 }

@@ -1,5 +1,7 @@
 package com.itsschatten.yggdrasil;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -40,7 +42,12 @@ public class SimpleConfig extends YamlConfiguration {
      * gets edited automatically.
      * <p>
      * Call {@link #setHeader(String[])} to use this.
+     * -- GETTER --
+     * Gets the header that is applied when the file is updated, or null if not set.
+     *
+     * @return the edit header
      */
+    @Getter
     private String[] editHeader;
 
     /**
@@ -53,7 +60,12 @@ public class SimpleConfig extends YamlConfiguration {
      * Only works when the default file does not exist!
      * (Logically, in the example above, you cannot create default
      * values for each player out there :))
+     * -- SETTER --
+     * Set the new default
+     *
+     * @param pathPrefix, the new path prefix, or use null to un-set
      */
+    @Setter
     private String pathPrefix;
 
     /**
@@ -97,8 +109,8 @@ public class SimpleConfig extends YamlConfiguration {
     /**
      * Makes a new instance with an optional default file (see above).
      *
-     * @param fileName     The name of the file.
-     * @param useDefaults Require the default file? see commentaries to the above constructor
+     * @param fileName        The name of the file.
+     * @param useDefaults     Require the default file? see commentaries to the above constructor
      * @param enforceDefaults Should we enforce the use of the default file?
      */
     public SimpleConfig(String fileName, boolean useDefaults, boolean enforceDefaults) {
@@ -122,24 +134,6 @@ public class SimpleConfig extends YamlConfiguration {
     }
 
     /**
-     * Gets the header that is applied when the file is updated, or null if not set.
-     *
-     * @return the edit header
-     */
-    public String[] getEditHeader() {
-        return editHeader;
-    }
-
-    /**
-     * Set the new default {@link #pathPrefix}
-     *
-     * @param pathPrefix, the new path prefix, or use null to un-set
-     */
-    public void setPathPrefix(String pathPrefix) {
-        this.pathPrefix = pathPrefix;
-    }
-
-    /**
      * Saves the file on the disk and loads it again.
      */
     public void reloadConfig() {
@@ -152,8 +146,8 @@ public class SimpleConfig extends YamlConfiguration {
      * Writes a key with a value to your file.
      * Example: write("weather.disable", true)
      *
-     * @param path,  the path, use '.' to split sections
-     * @param value, the value, can be a primitive, a String, HashMap or a Collection (List, or a Set)
+     * @param path  the path, use '.' to split sections
+     * @param value the value can be a primitive, a String, HashMap or a Collection (List, or a Set)
      */
     public void write(String path, Object value) {
         set(path, value);
@@ -310,7 +304,6 @@ public class SimpleConfig extends YamlConfiguration {
 
         } catch (final IOException ex) {
             Utils.logError("Failed to create file " + path);
-
             ex.printStackTrace();
         }
 

@@ -1,8 +1,8 @@
 package com.itsschatten.yggdrasil.menus.utils;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
-import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.StringUtil;
+import com.itsschatten.yggdrasil.Utils;
 import lombok.Builder;
 import lombok.NonNull;
 import net.kyori.adventure.text.Component;
@@ -12,8 +12,6 @@ import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -97,6 +95,11 @@ public final class ItemCreator {
     private boolean unbreakable;
 
     /**
+     * The custom model data.
+     */
+    private Integer modelData;
+
+    /**
      * Creates an item with a normal material.
      *
      * @param mat  The material of the item.
@@ -118,7 +121,7 @@ public final class ItemCreator {
      * @return The copied item.
      */
     public static ItemCreatorBuilder of(ItemStack copy) {
-        return ItemCreator.builder().item(copy);
+        return ItemCreator.builder().item(copy).meta(copy.getItemMeta());
     }
 
     /**
@@ -383,12 +386,7 @@ public final class ItemCreator {
         flags = flags == null ? new ArrayList<>() : new ArrayList<>(flags);
         if (makerMeta != null) {
             if (glow) {
-                if (is.getType().getEquipmentSlot() != EquipmentSlot.HAND || is.getType().getEquipmentSlot() != EquipmentSlot.OFF_HAND)
-                    makerMeta.addEnchant(Enchantment.ARROW_DAMAGE, 1, true);
-                else
-                    makerMeta.addEnchant(Enchantment.BINDING_CURSE, 1, true);
-
-                flags.add(CreatorFlags.HIDE_ENCHANTS);
+                makerMeta.setEnchantmentGlintOverride(true);
             }
 
             if (enchants != null) {
@@ -400,11 +398,15 @@ public final class ItemCreator {
                 makerMeta.displayName(StringUtil.color("<!i><white>" + name));
             } else if (componentName != null) {
                 makerMeta.displayName(StringUtil.color("<!i><white>").append(componentName));
-            } else if (makerMeta.displayName() != null){
+            } else if (makerMeta.displayName() != null) {
                 makerMeta.displayName(Objects.requireNonNull(makerMeta.displayName()).decoration(TextDecoration.ITALIC, false));
             }
 
             applyLoreAndItemFlags(makerMeta);
+
+            if (modelData != null) {
+                makerMeta.setCustomModelData(modelData);
+            }
 
             if (assignItemMeta(is, makerMeta)) return is;
         }
@@ -423,7 +425,7 @@ public final class ItemCreator {
         if (makerMeta != null) {
             final List<Component> lore = makerMeta.lore() == null ? new ArrayList<>() : makerMeta.lore();
 
-            if (lore != null && lore.size() != 0) {
+            if (lore != null && !lore.isEmpty()) {
                 makerMeta.lore(lore);
             }
 
@@ -475,7 +477,7 @@ public final class ItemCreator {
             lore.forEach((line) -> coloredLore.add(StringUtil.color("<!i><gray>" + line.replace("\\s", " "))));
         }
 
-        if (coloredLore.size() > 0) {
+        if (!coloredLore.isEmpty()) {
             makerMeta.lore(coloredLore);
         }
 

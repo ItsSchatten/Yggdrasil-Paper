@@ -15,10 +15,10 @@ import java.util.stream.Collectors;
 
 public class WeightedRandomBag<E> {
     // Proper map used to gather a random object.
-    private final NavigableMap<Double, E> map = new TreeMap<>();
+    private final NavigableMap<Double, E> map;
 
     // Backup map containing all objects keyed to their weight, allowing us to get ALL objects with the same weights.
-    private final Multimap<Double, E> backupMap = ArrayListMultimap.create();
+    private final Multimap<Double, E> backupMap;
 
     // Our random instance, this is generated on initialization of this class.
     private final Random random;
@@ -28,12 +28,23 @@ public class WeightedRandomBag<E> {
     @Getter
     private double total = 0;
 
+    /**
+     * Basic implementation that uses {@link ThreadLocalRandom#current()} as its Random instance.
+     */
     public WeightedRandomBag() {
         this(ThreadLocalRandom.current());
     }
 
+    /**
+     * Creates a new bag with the provided Random instance.
+     *
+     * @param random The Random instance to use.
+     */
     public WeightedRandomBag(Random random) {
         this.random = random;
+
+        this.map = new TreeMap<>();
+        this.backupMap = ArrayListMultimap.create();
     }
 
     /**

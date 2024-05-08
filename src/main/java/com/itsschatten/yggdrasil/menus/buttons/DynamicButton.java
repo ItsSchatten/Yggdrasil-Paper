@@ -4,6 +4,7 @@ import com.itsschatten.yggdrasil.TimeUtils;
 import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
+import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
 import com.itsschatten.yggdrasil.menus.utils.ItemCreator;
 import lombok.Getter;
 import lombok.Setter;
@@ -67,7 +68,15 @@ public abstract class DynamicButton extends Button {
             if (updateStack() != null) {
                 setInnerStack(updateStack().makeForMenu());
             }
-            Bukkit.getScheduler().runTaskLater(Utils.getInstance(), () -> menu.forceSet(getPosition(), getInnerStack()), getDelay());
+            Bukkit.getScheduler().runTaskLater(Utils.getInstance(), () -> {
+                if (getPositions() != null && getPositions().length > 0) {
+                    for (final InventoryPosition position : getPositions()) {
+                        menu.forceSet(position, getInnerStack());
+                    }
+                } else {
+                    menu.forceSet(getPosition(), getInnerStack());
+                }
+            }, getDelay());
         }
     }
 }

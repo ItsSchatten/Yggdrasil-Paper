@@ -4,9 +4,7 @@ import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.AnimatedButton;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
-import com.itsschatten.yggdrasil.menus.buttons.DynamicButton;
 import com.itsschatten.yggdrasil.menus.buttons.SimpleAnimatedButton;
-import com.itsschatten.yggdrasil.menus.utils.*;
 import com.itsschatten.yggdrasil.menus.utils.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -87,7 +85,7 @@ public abstract class PagedMenu<T> extends StandardMenu {
      */
     public PagedMenu(Menu parent, List<T> pages, boolean center) {
         super(parent);
-        this.fullList = pages;
+        this.fullList = new ArrayList<>(pages);
         this.center = center;
     }
 
@@ -99,7 +97,7 @@ public abstract class PagedMenu<T> extends StandardMenu {
      */
     public PagedMenu(Menu parent, List<T> pages) {
         super(parent);
-        this.fullList = pages;
+        this.fullList = new ArrayList<>(pages);
         this.center = false;
     }
 
@@ -112,8 +110,7 @@ public abstract class PagedMenu<T> extends StandardMenu {
      */
     public PagedMenu(Menu parent, @NotNull Collection<T> pages, boolean center) {
         super(parent);
-        this.fullList = new ArrayList<>();
-        fullList.addAll(pages);
+        this.fullList = new ArrayList<>(pages);
         this.center = center;
     }
 
@@ -125,8 +122,7 @@ public abstract class PagedMenu<T> extends StandardMenu {
      */
     public PagedMenu(Menu parent, @NotNull Collection<T> pages) {
         super(parent);
-        this.fullList = new ArrayList<>();
-        fullList.addAll(pages);
+        this.fullList = new ArrayList<>(pages);
         this.center = false;
     }
 
@@ -189,29 +185,8 @@ public abstract class PagedMenu<T> extends StandardMenu {
      */
     public final Button getPageButton(final ItemStack stack) {
         if (stack == null) return null;
-        for (final Button registeredButton : registeredPageButtons) {
-            if (registeredButton instanceof final AnimatedButton animatedButton) {
-                if (animatedButton.getInner().isSimilar(stack)) {
-                    return animatedButton;
-                }
-            }
 
-            if (registeredButton instanceof final DynamicButton dynamic) {
-                if (dynamic.getInnerStack().isSimilar(stack)) {
-                    return dynamic;
-                }
-            }
-
-            if (registeredButton.getItem() == null) continue;
-
-            if (registeredButton.getItem().isSimilar(stack) || registeredButton.getItem().equals(stack)) {
-                if (registeredButton.getPermission() != null)
-                    if (!getViewer().getBase().hasPermission(registeredButton.getPermission().getPermission()))
-                        return null;
-                return registeredButton;
-            }
-        }
-        return null;
+        return getButtonImpl(stack, registeredPageButtons);
     }
 
     /**
@@ -229,6 +204,18 @@ public abstract class PagedMenu<T> extends StandardMenu {
     }
 
     /**
+     * Refreshes the page currently viewed page.
+     */
+    public final void refreshPage() {
+        this.registeredPageButtons.clear();
+
+        clearPage();
+        drawPage();
+        updateTitleAndButtons();
+        drawListOfButtons(registeredPageButtons);
+    }
+
+    /**
      * Updates the list of for this menu, and attempts to update the viewable list.
      *
      * @param list The list that should be set as this Menu's.
@@ -238,11 +225,7 @@ public abstract class PagedMenu<T> extends StandardMenu {
         int usable = getUsableFromSize(getSize());
         this.pages = PaginateMenu.page(usable, fullList);
 
-        this.registeredPageButtons.clear();
-
-        clearPage();
-        drawPage();
-        drawListOfButtons(registeredPageButtons);
+        refreshPage();
     }
 
     /**
@@ -255,7 +238,7 @@ public abstract class PagedMenu<T> extends StandardMenu {
                 forceSet(InventoryPosition.middlePositions.get(i), new ItemStack(Material.AIR));
             }
         } else {
-            if (getPlaceablePositions() != null && getPlaceablePositions().size() > 0) {
+            if (getPlaceablePositions() != null && !getPlaceablePositions().isEmpty()) {
                 for (int i = 0; i < usable; i++) {
                     forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
                 }
@@ -311,7 +294,7 @@ public abstract class PagedMenu<T> extends StandardMenu {
                 registerPageButtons(button);
             }
         } else {
-            if (getPlaceablePositions() != null && getPlaceablePositions().size() > 0) {
+            if (getPlaceablePositions() != null && !getPlaceablePositions().isEmpty()) {
                 for (int i = 0; i < usable; i++) {
                     int finalI = i;
                     if (getValues().size() <= i) break;
@@ -814,10 +797,9 @@ public abstract class PagedMenu<T> extends StandardMenu {
      * @return The list of objects
      */
     public final List<T> getValues() {
-        if (page == 0 || pages.size() == 0) return Collections.emptyList();
+        if (page == 0 || pages.isEmpty()) return Collections.emptyList();
         org.apache.commons.lang.Validate.isTrue(pages.containsKey(page - 1), "Menu " + this + " does not contain page #" + (page - 1));
 
         return pages.get(page - 1);
     }
-
 }

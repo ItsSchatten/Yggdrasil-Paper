@@ -2,7 +2,9 @@ package com.itsschatten.yggdrasil;
 
 import com.google.common.io.ByteStreams;
 import com.itsschatten.yggdrasil.commands.CommandBase;
+import com.itsschatten.yggdrasil.menus.manager.DefaultPlayerManager;
 import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
+import com.itsschatten.yggdrasil.menus.utils.IMenuHolderManager;
 import com.itsschatten.yggdrasil.menus.utils.MenuListeners;
 import com.itsschatten.yggdrasil.menus.utils.TickingManager;
 import com.itsschatten.yggdrasil.wands.Wand;
@@ -18,6 +20,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.io.BukkitObjectInputStream;
@@ -33,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * Yet another utils class.
@@ -49,8 +53,9 @@ public class Utils {
      * Prisoner manager, used for menus.
      */
     @Getter
-    @Setter
     private static IMenuHolderManager manager;
+
+    private static DefaultPlayerManager defaultPlayerManager;
 
     /**
      * Are we in debug?
@@ -64,15 +69,6 @@ public class Utils {
      */
     @Getter
     private static Set<Wand> wands;
-
-    /**
-     * Sets the plugin for which this class belongs too. Only sets the instance.
-     *
-     * @param instance The {@link JavaPlugin} it should be set too.
-     */
-    public static void justSetInstance(JavaPlugin instance) {
-        Utils.instance = instance;
-    }
 
     /**
      * Sets the plugin for which this class belongs too, if passed instance is null we also set the wands set to null.
@@ -99,6 +95,20 @@ public class Utils {
     }
 
     /**
+     * Sets the manager instance and unregisters the default player manager if it's registered.
+     *
+     * @param manager The manager instance to set as the new manager.
+     */
+    public static void setManager(IMenuHolderManager manager) {
+        if (defaultPlayerManager != null) {
+            HandlerList.unregisterAll(defaultPlayerManager);
+            Utils.defaultPlayerManager = null;
+        }
+
+        Utils.manager = manager;
+    }
+
+    /**
      * Used to register the MenuListener to the plugin.
      * <p>
      * This <b>MUST</b> be run in-order to use the menu system or wands, otherwise just use {@link Utils#setInstance(JavaPlugin)}.
@@ -112,6 +122,15 @@ public class Utils {
 
         if (registerMenu) {
             methodInstance.getServer().getPluginManager().registerEvents(new MenuListeners(), methodInstance);
+
+            // Register the default player manager, so we can use menus "out of the box."
+            // This also registers the class as a listener
+            // to remove the player from the player map as they leave the server.
+            final DefaultPlayerManager defaultPlayerManager = new DefaultPlayerManager();
+            Utils.defaultPlayerManager = defaultPlayerManager;
+            methodInstance.getServer().getPluginManager().registerEvents(defaultPlayerManager, methodInstance);
+            setManager(defaultPlayerManager);
+
             TickingManager.beginTicking();
         }
 
@@ -146,16 +165,27 @@ public class Utils {
      * @return The number found on the permission, if player contains the <code>*</code> permission returns <code>99</code>
      */
     public static int getNumberFromPermission(final @NotNull Player player, final String prefix) {
-        if (player.hasPermission("*")) return 100;
+        return getNumberFromPermission(player, prefix, 100);
+    }
+
+    /**
+     * Utility method to obtain a number from a permission node.
+     *
+     * @param player The player we want to get the number for.
+     * @param prefix The prefix of the permission node we want to find. (EX: yggdrasil.storage)
+     * @param max    The maximum number to return, also used in the loop.
+     * @return The number found on the permission, if player contains the <code>*</code> permission returns <code>99</code>
+     */
+    public static int getNumberFromPermission(final @NotNull Player player, final String prefix, int max) {
+        if (player.hasPermission("*")) return max;
         int highest = 0;
-        for (int x = 1; x <= 100; x++) {
+        for (int x = 1; x <= max; x++) {
             if (player.hasPermission(prefix + x)) {
                 highest = x;
             }
         }
         return highest;
     }
-
 
     /**
      * Sends a message of an error if the {@link Player} has the developer permission.
@@ -208,7 +238,7 @@ public class Utils {
             // Use this for a hover event on the message to show the full stacktrace in the menu.
             final StringBuilder endBuilder = new StringBuilder();
             for (StackTraceElement stackTraceElement : trace) {
-                // If the element contains net.shadowsmc or com.itsschatten highlight it in blue.
+                // If the element contains com.itsschatten highlight it in blue.
                 if (stackTraceElement.toString().contains("com.itsschatten")) {
                     endBuilder.append("<aqua>").append(stackTraceElement).append("<gray>\n");
                     continue;
@@ -291,50 +321,87 @@ public class Utils {
         return Math.min(Math.max(value, min), max);
     }
 
+    /**
+     * @return Returns the instance's logger.
+     */
+    public static @NotNull Logger getLogger() {
+        return getInstance().getLogger();
+    }
 
     /**
-     * Sends a {@link String message} (or multiple) to the console.
+     * Sends a {@link String message} (or multiple) to the console with the INFO level.
      *
      * @param message  The first message that should be sent.
      * @param messages An array of messages that are then iterated through and sent to the console.
      */
     public static void log(@NotNull final String message, final String... messages) {
-        tellConsole(StringUtil.color("[Yggdrasil] <yellow>").append(Component.text(message)));
+        if (instance == null) {
+            throw new NullPointerException("Cannot log messages with a null plugin instance.");
+        }
 
-        if (message.length() > 0)
+        getLogger().info("[Yggdrasil] " + message);
+
+        if (!message.isEmpty())
             for (final String msg : messages)
-                tellConsole(StringUtil.color("[Yggdrasil] <yellow>").append(Component.text(msg)));
+                getLogger().info("[Yggdrasil] " + msg);
+
 
     }
 
     /**
-     * Sends a {@link String message} (or multiple) to the console with a DEBUG color scheme and prefix.
+     * Sends a {@link String message} (or multiple) to the console with the INFO level and an added [DEBUG].
      *
      * @param message  The first message that should be sent.
      * @param messages An array of messages that are then iterated through and sent to the console.
      */
     public static void debugLog(@NotNull final String message, final String... messages) {
-        if (debug) {
-            tellConsole(StringUtil.color("[Yggdrasil] <red>[DEBUG] <reset>").append(Component.text(message)));
+        if (instance == null) {
+            throw new NullPointerException("Cannot log messages with a null plugin instance.");
+        }
 
-            if (message.length() > 0)
+        if (debug) {
+            getLogger().info("[Yggdrasil] [DEBUG] " + message);
+
+            if (!message.isEmpty())
                 for (final String msg : messages)
-                    tellConsole(StringUtil.color("[Yggdrasil] <red>[DEBUG] <reset>").append(Component.text(msg)));
+                    getLogger().info("[Yggdrasil] [DEBUG] " + msg);
         }
     }
 
     /**
-     * Sends a {@link String message} (or multiple) to the console with an ERROR color scheme and prefix.
+     * Sends a {@link String message} (or multiple) to the console with the WARNING level.
+     *
+     * @param message  The first message that should be sent.
+     * @param messages An array of messages that are then iterated through and sent to the console.
+     */
+    public static void logWarning(@NotNull String message, String... messages) {
+        if (instance == null) {
+            throw new NullPointerException("Cannot log messages with a null plugin instance.");
+        }
+
+        getLogger().warning("[Yggdrasil] " + message);
+
+        if (!message.isEmpty())
+            for (final String msg : messages)
+                getLogger().warning("[Yggdrasil] " + msg);
+    }
+
+    /**
+     * Sends a {@link String message} (or multiple) to the console with the ERROR level.
      *
      * @param message  The first message that should be sent.
      * @param messages An array of messages that are then iterated through and sent to the console.
      */
     public static void logError(@NotNull String message, String... messages) {
-        tellConsole(StringUtil.color("[Yggdrasil] <red>[ERROR] ").append(Component.text(message)));
+        if (instance == null) {
+            throw new NullPointerException("Cannot log messages with a null plugin instance.");
+        }
 
-        if (message.length() > 0)
+        getLogger().severe("[Yggdrasil] " + message);
+
+        if (!message.isEmpty())
             for (final String msg : messages)
-                tellConsole(StringUtil.color("[Yggdrasil] <red>[ERROR] ").append(Component.text(msg)));
+                getLogger().severe("[Yggdrasil] " + msg);
     }
 
     /**
@@ -352,7 +419,6 @@ public class Utils {
         }
         logError("----------------- [ ERROR LOG END ] -----------------");
     }
-
 
     /**
      * Tell the specified {@link CommandSender} (either a player, console, or command block) the message(s) supplied.
@@ -389,7 +455,41 @@ public class Utils {
     }
 
     /**
-     * Sends a {@link Component} to the console, with no color.
+     * Tell the specified {@link CommandSender} (either a player, console, or command block) the message(s) supplied.
+     *
+     * @param toWhom   The CommandSender we should send the message(s) to.
+     * @param message  The first message that should be sent to the supplied CommandSender.
+     * @param messages An iterable of messages that are then iterated through and sent to the supplied CommandSender.
+     */
+    public static void tell(@NotNull CommandSender toWhom, @NotNull String message, Iterable<String> messages) {
+        if (!message.isBlank())
+            toWhom.sendMessage(StringUtil.color(message));
+
+        for (final String msg : messages) {
+            if (msg.isBlank()) continue;
+            toWhom.sendMessage(StringUtil.color(msg));
+        }
+    }
+
+    /**
+     * Tell the specified {@link CommandSender} (either a player, console, or command block) the message(s) supplied.
+     *
+     * @param toWhom   The CommandSender we should send the message(s) to.
+     * @param message  The first {@link Component} that should be sent to the supplied CommandSender.
+     * @param messages An iterable of messages that are then iterated through and sent to the supplied CommandSender.
+     */
+    public static void tell(@NotNull CommandSender toWhom, @Nullable Component message, Iterable<Component> messages) {
+        if (message != null)
+            toWhom.sendMessage(message);
+
+        for (final Component msg : messages) {
+            if (msg == null) continue;
+            toWhom.sendMessage(msg);
+        }
+    }
+
+    /**
+     * Sends a {@link Component} to the console.
      *
      * @param message The message to send.
      */
@@ -464,17 +564,14 @@ public class Utils {
      *
      * @param stream The stream we should use for our conversion.
      * @return A {@link UUID} if successful, otherwise <code>null</code>.
+     * @throws IOException thrown by ByteStreams.toByteArray if an I/O error occurs.
      */
-    public static @Nullable UUID convertBytesToUUID(final InputStream stream) {
+    @Contract("_ -> new")
+    public static @NotNull UUID convertBytesToUUID(final InputStream stream) throws IOException {
         final ByteBuffer byteBuffer = ByteBuffer.allocate(16);
-        try {
-            byteBuffer.put(ByteStreams.toByteArray(stream));
-            byteBuffer.flip();
-            return new UUID(byteBuffer.getLong(), byteBuffer.getLong());
-        } catch (final IOException ex) {
-            ex.printStackTrace();
-        }
-        return null;
+        byteBuffer.put(ByteStreams.toByteArray(stream));
+        byteBuffer.flip();
+        return new UUID(byteBuffer.getLong(), byteBuffer.getLong());
     }
 
 }

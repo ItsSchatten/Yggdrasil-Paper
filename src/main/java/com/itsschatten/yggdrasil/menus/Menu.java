@@ -1,7 +1,6 @@
 package com.itsschatten.yggdrasil.menus;
 
 import com.itsschatten.yggdrasil.Utils;
-import com.itsschatten.yggdrasil.menus.utils.*;
 import com.itsschatten.yggdrasil.menus.buttons.AnimatedButton;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
 import com.itsschatten.yggdrasil.menus.buttons.DynamicButton;
@@ -12,18 +11,18 @@ import com.itsschatten.yggdrasil.menus.types.interfaces.Ticking;
 import com.itsschatten.yggdrasil.menus.utils.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
+import org.apache.commons.lang3.ArrayUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The main menu class, you shouldn't extend this class,
@@ -54,6 +53,7 @@ public abstract class Menu extends AbstractMenuInventory {
     /**
      * All tasks for this menu.
      */
+    @Getter
     private final Set<ReschedulableTask> reschedulableTasks = new HashSet<>();
 
     /**
@@ -86,6 +86,7 @@ public abstract class Menu extends AbstractMenuInventory {
      * Has this menu been registered.
      */
     @Getter
+    @Accessors(fluent = true)
     private boolean hasRegistered;
 
     /**
@@ -170,9 +171,12 @@ public abstract class Menu extends AbstractMenuInventory {
     @Override
     public final boolean isSlotTakenByButton(final InventoryPosition position) {
         for (final Button button : registeredButtons) {
-            if (button.getPosition() == null || (button.getPermission() != null && !viewer.getBase().hasPermission(button.getPermission().getPermission())))
+            if (button.getPosition() == null && (button.getPositions() == null || button.getPositions().length == 0) ||
+                    (button.getPermission() != null && !viewer.getBase().hasPermission(button.getPermission().getPermission())))
                 return false;
-            if (button.getPosition().equals(position)) return true;
+
+            if (button.getPosition().equals(position) || ArrayUtils.contains(button.getPositions(), position))
+                return true;
         }
         return false;
     }
@@ -285,11 +289,24 @@ public abstract class Menu extends AbstractMenuInventory {
         for (final Button button : toDraw) {
             if (button.getPermission() != null) {
                 if (getViewer().getBase().hasPermission(button.getPermission().getPermission())) {
-                    getInventory().forceSet(button.getPosition(), button);
+                    if (button.getPositions() != null && button.getPositions().length > 0) {
+                        for (InventoryPosition position : button.getPositions()) {
+                            getInventory().forceSet(position, button);
+                        }
+                    } else {
+                        getInventory().forceSet(button.getPosition(), button);
+                    }
                 }
                 continue;
             }
-            getInventory().forceSet(button.getPosition(), button);
+
+            if (button.getPositions() != null && button.getPositions().length > 0) {
+                for (final InventoryPosition position : button.getPositions()) {
+                    getInventory().forceSet(position, button);
+                }
+            } else {
+                getInventory().forceSet(button.getPosition(), button);
+            }
         }
     }
 
@@ -347,7 +364,7 @@ public abstract class Menu extends AbstractMenuInventory {
                 }
             }
         } else {
-            if (reschedulableTasks.size() > 0) {
+            if (!reschedulableTasks.isEmpty()) {
                 Bukkit.getScheduler().runTask(Utils.getInstance(), () -> reschedulableTasks.forEach(ReschedulableTask::restart));
             }
         }
@@ -463,23 +480,47 @@ public abstract class Menu extends AbstractMenuInventory {
      */
     public Button getButton(final ItemStack stack) {
         if (stack == null) return null;
-        for (final Button registeredButton : registeredButtons) {
+
+        return getButtonImpl(stack, registeredButtons);
+    }
+
+    /**
+     * Method to obtain the button from an {@link ItemStack}
+     *
+     * @param stack   The {@link ItemStack} to search for a button with.
+     * @param buttons The list of {@link Button} to search.
+     * @return Returns the found {@link Button} or {@code null} if not found.
+     */
+    @ApiStatus.Internal
+    protected final @Nullable Button getButtonImpl(final ItemStack stack, final @NotNull List<Button> buttons) {
+        for (final Button registeredButton : buttons) {
+
+            // Check if we have an animated button,
+            // because this button's ItemStack may be animated/changed we have to check it differently.
             if (registeredButton instanceof final AnimatedButton animatedButton) {
-                if (animatedButton.getInner().isSimilar(stack)) {
+                if (animatedButton.getInnerStack().ensureServerConversions().isSimilar(stack)) {
                     return animatedButton;
                 }
             }
 
+            // Check if we have a dynamic button,
+            // because this button's ItemStack may change between registration and clicking we have
+            // to use the internal stack.
             if (registeredButton instanceof final DynamicButton dynamic) {
-                if (dynamic.getInnerStack().isSimilar(stack)) {
+                if (dynamic.getInnerStack().ensureServerConversions().isSimilar(stack)) {
                     return dynamic;
                 }
             }
 
+            // If a registered button has a null item return, this is not checked for the animated buttons.
             if (registeredButton.getItem() == null) continue;
 
-            if (registeredButton.getItem().isSimilar(stack) || registeredButton.getItem().equals(stack)) {
+            // Ensuring all conversions have taken place on the item,
+            // we check if it is similar to the provided stack or exactly equal to it.
+            if (registeredButton.getItem().ensureServerConversions().isSimilar(stack) || registeredButton.getItem().ensureServerConversions().equals(stack)) {
+                // Check if this button has permissions.
                 if (registeredButton.getPermission() != null)
+                    // We do have permissions, check if the main viewer of the menu has permission to click the button.
                     if (!getViewer().getBase().hasPermission(registeredButton.getPermission().getPermission()))
                         return null;
                 return registeredButton;
@@ -497,5 +538,18 @@ public abstract class Menu extends AbstractMenuInventory {
      * @param clicked What item was clicked.
      */
     public void onClick(final IMenuHolder user, final InventoryPosition slot, final ClickType click, final ItemStack clicked) {
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Menu menu = (Menu) o;
+        return isOpeningNew() == menu.isOpeningNew() && hasRegistered() == menu.hasRegistered() && isRedrawing() == menu.isRedrawing() && Objects.equals(registeredButtons, menu.registeredButtons) && Objects.equals(reschedulableTasks, menu.reschedulableTasks) && Objects.equals(register, menu.register) && Objects.equals(getViewer(), menu.getViewer()) && Objects.equals(getViewers(), menu.getViewers());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(registeredButtons, reschedulableTasks, register, getViewer(), getViewers(), isOpeningNew(), hasRegistered(), isRedrawing());
     }
 }

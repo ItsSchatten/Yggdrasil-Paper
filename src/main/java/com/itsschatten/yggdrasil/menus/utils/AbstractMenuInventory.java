@@ -14,13 +14,13 @@ import org.jetbrains.annotations.Range;
  *
  * @see MenuInventory
  */
+@Setter
+@Getter
 public abstract class AbstractMenuInventory {
 
     /**
      * The {@link MenuInventory inventory} instance for this Menu.
      */
-    @Getter
-    @Setter
     MenuInventory inventory = null;
 
     /**

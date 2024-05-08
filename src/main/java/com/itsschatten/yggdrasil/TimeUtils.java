@@ -387,6 +387,7 @@ public class TimeUtils {
     /**
      * Utility to make working with TimeUnits more "human friendly".
      */
+    @Getter
     public enum TimeUnits {
         /**
          * A Minecraft game tick in real mills.
@@ -424,7 +425,6 @@ public class TimeUtils {
         /**
          * Get the value of the enum as a long value.
          */
-        @Getter
         final long asLong;
 
         /**
@@ -441,6 +441,7 @@ public class TimeUtils {
     /**
      * Utility class to make working with Minecraft ticks easier.
      */
+    @Getter
     public enum MinecraftTimeUnits {
         /**
          * A second in ticks.
@@ -474,7 +475,6 @@ public class TimeUtils {
         /**
          * Get the enum value as a long.
          */
-        @Getter
         final long asLong;
 
         /**
