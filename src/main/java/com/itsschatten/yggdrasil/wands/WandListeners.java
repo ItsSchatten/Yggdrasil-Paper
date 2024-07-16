@@ -64,16 +64,16 @@ public class WandListeners implements Listener {
 
         Utils.getWands().forEach((wand) -> {
             if (event.getItem() == null) return; // If the item is null, ignore.
-            if (wand.getPermission().isBlank() || player.hasPermission(wand.getPermission())) { // See if the player has permission to use our wand.
+            if (wand.getPermission().isBlank() || player.hasPermission(wand.getPermission())) {
                 if (event.getItem().equals(wand.getItemStack())) { // If the item used is exactly the wand's item stack.
                     event.setCancelled(true); // Cancel the event (no breaking blocks / no tilling soil)
 
-                    if (event.getAction() == Action.LEFT_CLICK_BLOCK) { // Is the action a LEFT_CLICK?
+                    if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
                         firstLocationMap.put(player.getUniqueId(), event.getClickedBlock().getLocation()); // Set the first location.
                         wand.onSelection(event.getClickedBlock().getLocation(), player, false); // Call the onSelection method from the wand.
                     }
 
-                    if (event.getAction() == Action.RIGHT_CLICK_BLOCK) { // Is the action a RIGHT_CLICK?
+                    if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
                         secondLocationMap.put(player.getUniqueId(), event.getClickedBlock().getLocation()); // Set the second location.
                         wand.onSelection(event.getClickedBlock().getLocation(), player, true); // Call the onSelection method from the wand.
                     }

@@ -71,7 +71,7 @@ public class SimpleConfig extends YamlConfiguration {
     /**
      * Makes a new SimpleConfig instance that will manage one configuration file.
      * <p>
-     * NB: Make sure you created the file with the exact same name and all
+     * NB: Make sure you've created the file with the exact same name and all
      * the default values inside your plugin in the src/main/resources folder!
      *
      * @param fileName, the name of the configuration file, e.g. settings.yml
@@ -83,7 +83,7 @@ public class SimpleConfig extends YamlConfiguration {
     /**
      * Makes a new SimpleConfig instance that will manage one configuration file.
      * <p>
-     * NB: Make sure you created the file with the exact same name and all
+     * NB: Make sure you've created the file with the exact same name and all
      * the default values inside your plugin in the src/main/resources folder!
      *
      * @param fileName,       the name of the configuration file, e.g. settings.yml
@@ -120,7 +120,6 @@ public class SimpleConfig extends YamlConfiguration {
             // Now we use the file in your plugin .jar as defaults for updating the file on the disk.
             this.defaults = YamlConfiguration.loadConfiguration(new InputStreamReader(Objects.requireNonNull(SimpleConfig.class.getResourceAsStream("/" + fileName)), StandardCharsets.UTF_8));
             Objects.requireNonNull(defaults, "Could not get the default " + fileName + " inside of your plugin, make sure you created the file and that you did not replace the jar on a running server!");
-
         } else
             this.defaults = null;
 
@@ -164,15 +163,14 @@ public class SimpleConfig extends YamlConfiguration {
             // Copy the header
             if (editHeader != null) {
                 options().setHeader(Collections.singletonList(StringUtils.join(editHeader, System.lineSeparator())));
-                options().copyHeader(true);
+                options().parseComments(true);
             }
 
             // Call parent method for saving
             super.save(file);
         } catch (final IOException ex) {
+            Utils.logError(ex);
             Utils.logError("Failed to save configuration from " + file);
-
-            ex.printStackTrace();
         }
     }
 
@@ -186,9 +184,8 @@ public class SimpleConfig extends YamlConfiguration {
             // Call parent method for loading
             super.load(file);
         } catch (final Throwable t) {
+            Utils.logError(t);
             Utils.logError("Failed to load configuration from " + file);
-
-            t.printStackTrace();
         }
     }
 
@@ -239,7 +236,7 @@ public class SimpleConfig extends YamlConfiguration {
         // hacky workaround: prevent infinite loop due to how get works in the parent class
         final String m = new Throwable().getStackTrace()[1].getMethodName();
 
-        // Add path prefix, but only when the default file doesn't  exist
+        // Add path prefix, but only when the default file doesn't exist.
         if (defaults == null && pathPrefix != null && !m.equals("getConfigurationSection") && !m.equals("get"))
             path = pathPrefix + "." + path;
 
@@ -273,7 +270,7 @@ public class SimpleConfig extends YamlConfiguration {
                 Files.copy(is, Paths.get(file.toURI()), StandardCopyOption.REPLACE_EXISTING);
                 Utils.log("<gray>Created the default file &b" + path + "<gray>.");
             } catch (final IOException e) {
-                e.printStackTrace();
+                Utils.logError(e);
             }
 
         return file;
@@ -303,8 +300,8 @@ public class SimpleConfig extends YamlConfiguration {
             if (!destination.createNewFile()) Utils.logError("Failed to create the " + destination + " file...");
 
         } catch (final IOException ex) {
+            Utils.logError(ex);
             Utils.logError("Failed to create file " + path);
-            ex.printStackTrace();
         }
 
         return destination;

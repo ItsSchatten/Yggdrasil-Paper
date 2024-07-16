@@ -55,7 +55,7 @@ public abstract class StandardMenu extends Menu {
      *
      * @return The size of the inventory.
      */
-    public final int getSize() {
+    public final @Range(from = 9, to = 54) int getSize() {
         if (rows == null)
             Validate.isTrue(size != null, "Size must be set in order to call getSize() in: " + this);
         return rows != null && (rows > 0) ? rows * 9 : size;
@@ -66,7 +66,7 @@ public abstract class StandardMenu extends Menu {
      *
      * @param size The size to set for this menu, must be a multiple of nine.
      */
-    public void setSize(@Range(from = 8, to = 53) final int size) {
+    public void setSize(@Range(from = 9, to = 54) final int size) {
         if (size % 9 != 0) {
             throw new UnsupportedOperationException("Size must be multiple of 9.");
         }

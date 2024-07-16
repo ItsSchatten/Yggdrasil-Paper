@@ -33,7 +33,7 @@ public class TimeUtils {
     }
 
     /**
-     * Converts a Long into a String that will format it properly with time labels.
+     * Converts a primitive long into a {@link String} that will format it properly with time labels.
      *
      * @param timeLong A time in long form.
      * @return Returns a string with appended time labels.
@@ -59,7 +59,7 @@ public class TimeUtils {
     }
 
     /**
-     * Converts a Long into a String that will format it properly with time labels.
+     * Converts a primitive long into a {@link String} that will format it properly with time labels.
      *
      * @param timeLong A time in long form.
      * @return Returns a string with appended time labels.
@@ -81,7 +81,7 @@ public class TimeUtils {
     }
 
     /**
-     * Converts a Long into a String that will be formatted with proper time labels.
+     * Converts a primitive long into a {@link String} that will be formatted with proper time labels.
      *
      * @param timeLong A time in long form.
      * @return Returns a string with the appended time labels.
@@ -103,7 +103,7 @@ public class TimeUtils {
     }
 
     /**
-     * Converts a Long into a String that will format it properly with time labels.
+     * Converts a primitive long into a {@link String} that will format it properly with time labels.
      *
      * @param timeLong A time in long form.
      * @return Returns a string with appended time labels.
@@ -129,7 +129,8 @@ public class TimeUtils {
     }
 
     /**
-     * Converts a Long into a String that will format it properly with time labels.
+     * Converts a primitive long into a {@link String} that will format it properly with time labels,
+     * using {@link MinecraftTimeUnits}.
      *
      * @param timeLong A time in long form.
      * @return Returns a string with appended time labels.
@@ -151,7 +152,8 @@ public class TimeUtils {
     }
 
     /**
-     * Converts a Long into a String that will be formatted with proper time labels.
+     * Converts a primitive long into a {@link String} that will be formatted with proper time labels,
+     * using {@link MinecraftTimeUnits}.
      *
      * @param timeLong A time in long form.
      * @return Returns a string with the appended time labels.
@@ -173,7 +175,7 @@ public class TimeUtils {
     }
 
     /**
-     * Convert time to be in a similar style to a digital clock.
+     * Convert primitive long value to be in a similar style to a digital clock, using {@link MinecraftTimeUnits}.
      *
      * @param timeLong The time we are converting.
      * @return The string.
@@ -211,7 +213,7 @@ public class TimeUtils {
      * @return The time in the form of a long value.
      */
     public static long getTimeFromString(@NotNull String string) {
-        if (string.length() == 0) {
+        if (string.isEmpty()) {
             return 0L;
         }
         // Valid modifiers: Y, M, W, D, h, m, s
@@ -257,7 +259,7 @@ public class TimeUtils {
      */
     @NotNull
     private static String getString(@NotNull StringBuilder timeString) {
-        if (timeString.length() == 0) {
+        if (timeString.isEmpty()) {
             return "0 seconds";
         }
 
@@ -275,7 +277,7 @@ public class TimeUtils {
      */
     @NotNull
     private static String _getString(@NotNull StringBuilder timeString) {
-        if (timeString.length() == 0) {
+        if (timeString.isEmpty()) {
             return "0 seconds";
         }
 
@@ -423,7 +425,7 @@ public class TimeUtils {
         YEAR_MS(DAY_MS.getAsLong() * 365);
 
         /**
-         * Get the value of the enum as a long value.
+         * Get the value of the enum as a primitive long.
          */
         final long asLong;
 
@@ -473,7 +475,7 @@ public class TimeUtils {
         YEAR_MS(DAY_MS.getAsLong() * 365);
 
         /**
-         * Get the enum value as a long.
+         * Get the enum value as a primitive long.
          */
         final long asLong;
 

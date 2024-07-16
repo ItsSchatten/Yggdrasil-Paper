@@ -8,7 +8,6 @@ import net.kyori.adventure.text.Component;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -332,11 +331,11 @@ public abstract class SubCommandBase implements Comparable<SubCommandBase> {
             return null;
         }
 
-        if (partialPlayers.size() == 0) {
+        if (partialPlayers.isEmpty()) {
             return null;
         }
 
-        return Bukkit.getPlayer(partialPlayers.get(0).getUniqueId());
+        return Bukkit.getPlayer(partialPlayers.getFirst().getUniqueId());
     }
 
 
@@ -470,7 +469,7 @@ public abstract class SubCommandBase implements Comparable<SubCommandBase> {
      *
      * @param sender The sender of this command.
      * @param args   The arguments for said command.
-     * @return Returns a List that is used for tab complete.
+     * @return Returns a {@link List} used for tab complete.
      */
     public List<String> getTabComplete(final CommandSender sender, String[] args) {
         return Collections.emptyList();

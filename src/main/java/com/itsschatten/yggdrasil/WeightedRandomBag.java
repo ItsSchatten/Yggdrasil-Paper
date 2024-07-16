@@ -13,6 +13,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+/**
+ * Weighted randomness.
+ *
+ * @param <E> The type in this bag.
+ */
 public class WeightedRandomBag<E> {
     // Proper map used to gather a random object.
     private final NavigableMap<Double, E> map;
@@ -98,7 +103,7 @@ public class WeightedRandomBag<E> {
     }
 
     /**
-     * Obtains a nullable entry from {@link #map}
+     * Gets a nullable entry from {@link #map}
      *
      * @return Either <code>null</code> or an object from the map.
      */
@@ -112,7 +117,7 @@ public class WeightedRandomBag<E> {
     }
 
     /**
-     * Obtains a nullable entry from {@link #map} based ont he provided filter.
+     * Gets a nullable entry from {@link #map} based ont he provided filter.
      *
      * @param filter Filter options for this map.
      * @return Either <code>null</code> or an object from the map.

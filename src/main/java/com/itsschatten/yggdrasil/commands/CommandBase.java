@@ -15,7 +15,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.PluginIdentifiableCommand;
-import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -76,7 +75,7 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
     }
 
     /**
-     * Obtains a sub command based on its name.
+     * Gets a sub command based on its name.
      *
      * @param name the name of the {@link SubCommandBase}
      */
@@ -216,11 +215,11 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
                 tell(ex.tellMessage);
                 return true;
             } catch (final IllegalArgumentException ex) {
-                ex.printStackTrace();
+                Utils.logError(ex);
                 Utils.logError("There was an error during tab completion for the command " + commandName + "!");
                 tell("<red>An error occurred while tab completing this command!" + (ex.getCause() == null ? ex.getMessage() : ex.getCause()));
             } catch (final Exception ex) {
-                ex.printStackTrace();
+                Utils.logError(ex);
                 Utils.logError("An error occurred that couldn't be caught!");
                 tell("<red>Some error occurred while attempting to run the command! " + (ex.getCause() == null ? ex.getMessage() : ex.getCause()));
             }
@@ -240,7 +239,7 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
     }
 
     /**
-     * Check if the command has an appropriate amount of arguments.
+     * Check if the command has an appropriate number of arguments.
      *
      * @param minLength The minimum length the command must have to execute.
      * @param message   The message that will be sent if the argument length does not match.
@@ -560,7 +559,7 @@ public abstract class CommandBase extends Command implements PluginIdentifiableC
      * @param sender  The sender of this command.
      * @param command The name of the command used.
      * @param args    The arguments for said command.
-     * @return Returns a List that is used for tab complete.
+     * @return Returns a {@link List} used for tab complete.
      */
     @Contract(pure = true)
     public @NotNull List<String> getTabComplete(CommandSender sender, final String command, final String[] args) {

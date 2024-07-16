@@ -10,6 +10,7 @@ import com.itsschatten.yggdrasil.menus.utils.TickingManager;
 import com.itsschatten.yggdrasil.wands.Wand;
 import com.itsschatten.yggdrasil.wands.WandListeners;
 import com.itsschatten.yggdrasil.wands.WandType;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
@@ -55,6 +56,9 @@ public class Utils {
     @Getter
     private static IMenuHolderManager manager;
 
+    /**
+     * Default player manager.
+     */
     private static DefaultPlayerManager defaultPlayerManager;
 
     /**
@@ -147,7 +151,7 @@ public class Utils {
      */
     public static void registerCommands(CommandBase... commands) {
         Validate.notNull(commands, "Provided commands must not equal null."); // checking if the commands array provided isn't null, if it is it will error out.
-        Validate.isTrue(commands.length > 0, "You must provide commands to register."); // Ensuring that the length of the commands array is larger than 0.
+        Validate.isTrue(commands.length > 0, "You must provide commands to register."); // Ensuring that the length of the command array is larger than 0.
 
         for (CommandBase command : commands) {
             if (!Bukkit.getServer().getCommandMap().register(getInstance().getName(), command)) {
@@ -158,7 +162,7 @@ public class Utils {
     }
 
     /**
-     * Utility method to obtain a number from a permission node.
+     * Utility method to get a number from a permission node.
      *
      * @param player The player we want to get the number for.
      * @param prefix The prefix of the permission node we want to find. (EX: yggdrasil.storage)
@@ -169,7 +173,7 @@ public class Utils {
     }
 
     /**
-     * Utility method to obtain a number from a permission node.
+     * Utility method to get a number from a permission node.
      *
      * @param player The player we want to get the number for.
      * @param prefix The prefix of the permission node we want to find. (EX: yggdrasil.storage)
@@ -259,7 +263,7 @@ public class Utils {
      *
      * @param items The array of items that is to be converted.
      * @return Returns the encoded {@link ItemStack} array.
-     * @throws IllegalStateException If unable to save the ItemStack this is thrown.
+     * @throws IllegalStateException If unable to save the ItemStack, this is thrown.
      */
     public static @NotNull String convertItemStackToBase64(ItemStack[] items) throws IllegalStateException {
         try {
@@ -421,6 +425,74 @@ public class Utils {
     }
 
     /**
+     * Tell the specified {@link CommandSourceStack}
+     * (either a player, console, or command block) the message(s) supplied.
+     *
+     * @param source   The source we should send the message(s) to.
+     * @param message  The first message that should be sent to the supplied CommandSender.
+     * @param messages An array of messages that are then iterated through and sent to the supplied CommandSender.
+     */
+    // FIXME: Remove unstable when stable.
+    @SuppressWarnings("UnstableApiUsage")
+    public static void tell(CommandSourceStack source, @NotNull String message, String... messages) {
+        tell(source, message, List.of(messages));
+    }
+
+    /**
+     * Tell the specified {@link CommandSourceStack}
+     * (either a player, console, or command block) the message(s) supplied.
+     *
+     * @param source   The source we should send the message(s) to.
+     * @param message  The first message that should be sent to the supplied CommandSender.
+     * @param messages An array of messages that are then iterated through and sent to the supplied CommandSender.
+     */
+    // FIXME: Remove unstable when stable.
+    @SuppressWarnings("UnstableApiUsage")
+    public static void tell(CommandSourceStack source, @NotNull String message, Collection<String> messages) {
+        if (!message.isBlank()) {
+            source.getSender().sendMessage(StringUtil.color(message));
+        }
+
+        for (final String msg : messages) {
+            if (msg.isBlank()) continue;
+            source.getSender().sendMessage(StringUtil.color(msg));
+        }
+    }
+
+    /**
+     * Tell the specified {@link CommandSender} (either a player, console, or command block) the message(s) supplied.
+     *
+     * @param source   The CommandSender we should send the message(s) to.
+     * @param message  The first {@link Component} that should be sent to the supplied CommandSender.
+     * @param messages An array of messages that are then iterated through and sent to the supplied CommandSender.
+     */
+    // FIXME: Remove unstable when stable.
+    @SuppressWarnings("UnstableApiUsage")
+    public static void tell(CommandSourceStack source, Component message, Component... messages) {
+        tell(source, message, List.of(messages));
+    }
+
+    /**
+     * Tell the specified {@link CommandSender} (either a player, console, or command block) the message(s) supplied.
+     *
+     * @param source   The CommandSender we should send the message(s) to.
+     * @param message  The first {@link Component} that should be sent to the supplied CommandSender.
+     * @param messages An array of messages that are then iterated through and sent to the supplied CommandSender.
+     */
+    // FIXME: Remove unstable when stable.
+    @SuppressWarnings("UnstableApiUsage")
+    public static void tell(CommandSourceStack source, Component message, Collection<Component> messages) {
+        if (message != null) {
+            source.getSender().sendMessage(message);
+        }
+
+        for (final Component msg : messages) {
+            if (msg == null) continue;
+            source.getSender().sendMessage(msg);
+        }
+    }
+
+    /**
      * Tell the specified {@link CommandSender} (either a player, console, or command block) the message(s) supplied.
      *
      * @param toWhom   The CommandSender we should send the message(s) to.
@@ -459,7 +531,7 @@ public class Utils {
      *
      * @param toWhom   The CommandSender we should send the message(s) to.
      * @param message  The first message that should be sent to the supplied CommandSender.
-     * @param messages An iterable of messages that are then iterated through and sent to the supplied CommandSender.
+     * @param messages An iterable list of messages that are then iterated through and sent to the supplied CommandSender.
      */
     public static void tell(@NotNull CommandSender toWhom, @NotNull String message, Iterable<String> messages) {
         if (!message.isBlank())
@@ -476,7 +548,7 @@ public class Utils {
      *
      * @param toWhom   The CommandSender we should send the message(s) to.
      * @param message  The first {@link Component} that should be sent to the supplied CommandSender.
-     * @param messages An iterable of messages that are then iterated through and sent to the supplied CommandSender.
+     * @param messages An iterable list of messages that are then iterated through and sent to the supplied CommandSender.
      */
     public static void tell(@NotNull CommandSender toWhom, @Nullable Component message, Iterable<Component> messages) {
         if (message != null)

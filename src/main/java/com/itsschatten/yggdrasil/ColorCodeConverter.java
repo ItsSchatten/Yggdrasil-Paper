@@ -182,7 +182,7 @@ public enum ColorCodeConverter {
 
         // Replace the colors.
         for (final ColorCodeConverter converter : values()) {
-            string = string.replace("&" + converter.colorCode, converter.replacement).replace("§" + converter.colorCode, converter.replacement);
+            string = string.replaceAll("[§&]" + converter.colorCode, converter.replacement);
         }
 
         return string;

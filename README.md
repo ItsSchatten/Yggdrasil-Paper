@@ -6,3 +6,5 @@ plenty of useful (or at least I think so) utilities in an attempt to make develo
 ### How to Use
 
 Coming soon:tm:
+
+*let's be honest, it won't be soon I'm the only one using this library.*
