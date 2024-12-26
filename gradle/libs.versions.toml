@@ -1,0 +1,36 @@
+# All versions for the libraries and plugins.
+[versions]
+jetbrains-annotations-ver = "24.1.0"
+lombok-ver = "1.18.34"
+
+papermc-ver = "1.21.4-R0.1-SNAPSHOT"
+velocity-ver = "3.4.0-SNAPSHOT"
+
+configurate-ver = "4.1.2"
+
+lang-ver = "3.17.0"
+
+paperweight-ver = "2.0.0-beta.8"
+lombok-plugin-ver = "8.6"
+shadow-ver = "8.3.0"
+
+# The libraries in use.
+[libraries]
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations-ver" }
+lombok = { module = "org.projectlombok:lombok", version.ref = "lombok-ver" }
+
+velocity = { module = "com.velocitypowered:velocity-api", version.ref = "velocity-ver" }
+
+configurate = { module = "org.spongepowered:configurate-yaml", version.ref = "configurate-ver"}
+
+commons-lang = { module = "org.apache.commons:commons-lang3", version.ref = "lang-ver" }
+
+# Bundles of libraries.
+[bundles]
+common = ["jetbrains-annotations", "lombok"]
+
+# The plugins for the project.
+[plugins]
+paperweight = { id = "io.papermc.paperweight.userdev", version.ref = "paperweight-ver" }
+lombok-plugin = { id = "io.freefair.lombok", version.ref = "lombok-plugin-ver" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow-ver" }

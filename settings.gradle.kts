@@ -1,1 +1,8 @@
-rootProject.name = "Yggdrasil-Paper"
+rootProject.name = "Yggdrasil"
+
+include("common")
+include("wands")
+include("menus")
+include("anvilgui")
+include("velocity")
+include("bom")
