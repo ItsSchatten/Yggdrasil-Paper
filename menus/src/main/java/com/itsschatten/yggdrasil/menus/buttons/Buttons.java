@@ -1,10 +1,12 @@
 package com.itsschatten.yggdrasil.menus.buttons;
 
 import com.itsschatten.yggdrasil.menus.buttons.impl.*;
+import lombok.experimental.UtilityClass;
 
 /**
  * Helper class to quickly get a {@link Button} builder.
  */
+@UtilityClass
 public final class Buttons {
 
     /**

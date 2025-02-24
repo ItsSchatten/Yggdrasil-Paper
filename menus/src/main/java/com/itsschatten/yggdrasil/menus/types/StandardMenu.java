@@ -1,6 +1,5 @@
 package com.itsschatten.yggdrasil.menus.types;
 
-import com.itsschatten.yggdrasil.items.ItemOptions;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.premade.CloseButton;
 import com.itsschatten.yggdrasil.menus.buttons.premade.InfoButton;
@@ -9,7 +8,6 @@ import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
 import com.itsschatten.yggdrasil.menus.utils.MenuInventory;
 import lombok.Getter;
 import lombok.Setter;
-import net.kyori.adventure.key.Key;
 import org.apache.commons.lang3.Validate;
 import org.bukkit.Material;
 import org.jetbrains.annotations.NotNull;
@@ -181,7 +179,6 @@ public abstract class StandardMenu extends Menu {
                 .menuToReturn(parent)
                 .material(Material.ARROW)
                 .name("<yellow>< Return to " + (parent != null ? parent.getInventory().getTitle() : ""))
-                .options(ItemOptions.HIDE_ALL_FLAGS.toBuilder().model(Key.key("schatten:arrow_back_highlight")).build())
                 .position(InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 2))
                 .build();
     }

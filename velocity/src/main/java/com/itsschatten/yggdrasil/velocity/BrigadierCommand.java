@@ -36,6 +36,16 @@ import java.util.function.Predicate;
 public abstract class BrigadierCommand implements Comparable<BrigadierCommand> {
 
     /**
+     * Designates that the command has been a success at least once.
+     */
+    protected final static int SUCCESS = 1;
+
+    /**
+     * Designates nothing happened and the command failed.
+     */
+    protected final static int FAILURE = 0;
+
+    /**
      * The description of the command.
      */
     private final String description;
@@ -163,6 +173,34 @@ public abstract class BrigadierCommand implements Comparable<BrigadierCommand> {
         this.description = "";
         this.aliases = null;
         this.subcommands = new ArrayList<>();
+    }
+
+    /**
+     * Creates a new {@link LiteralArgumentBuilder} of the required name.
+     *
+     * @param name The literal name.
+     * @return a new {@link LiteralArgumentBuilder}.
+     */
+    public static @NotNull LiteralArgumentBuilder<CommandSource> literal(final String name) {
+        Preconditions.checkNotNull(name, "'name' must not be null");
+        Preconditions.checkArgument(name.indexOf(' ') == -1, "'name' may not contain any spaces!");
+
+        return LiteralArgumentBuilder.literal(name);
+    }
+
+    /**
+     * Creates a new {@link com.mojang.brigadier.builder.RequiredArgumentBuilder} of the required name and {@link ArgumentType}.
+     *
+     * @param name         The argument name.
+     * @param argumentType The argument type.
+     * @param <T>          The {@link ArgumentType} required type.
+     * @return a new {@link RequiredArgumentBuilder}.
+     */
+    public static <T> @NotNull RequiredArgumentBuilder<CommandSource, T> argument(final @NotNull String name, @NotNull final ArgumentType<T> argumentType) {
+        Preconditions.checkNotNull(name, "'name' must not be null!");
+        Preconditions.checkNotNull(argumentType, "'argumentType' must not be null!");
+
+        return RequiredArgumentBuilder.argument(name, argumentType);
     }
 
     @Override
@@ -330,32 +368,4 @@ public abstract class BrigadierCommand implements Comparable<BrigadierCommand> {
      * @see #build()
      */
     public abstract LiteralArgumentBuilder<CommandSource> command();
-
-    /**
-     * Creates a new {@link LiteralArgumentBuilder} of the required name.
-     *
-     * @param name The literal name.
-     * @return a new {@link LiteralArgumentBuilder}.
-     */
-    public static @NotNull LiteralArgumentBuilder<CommandSource> literalBuilder(final String name) {
-        Preconditions.checkNotNull(name, "'name' must not be null");
-        Preconditions.checkArgument(name.indexOf(' ') == -1, "'name' may not contain any spaces!");
-
-        return LiteralArgumentBuilder.literal(name);
-    }
-
-    /**
-     * Creates a new {@link com.mojang.brigadier.builder.RequiredArgumentBuilder} of the required name and {@link ArgumentType}.
-     *
-     * @param name         The argument name.
-     * @param argumentType The argument type.
-     * @param <T>          The {@link ArgumentType} required type.
-     * @return a new {@link RequiredArgumentBuilder}.
-     */
-    public static <T> @NotNull RequiredArgumentBuilder<CommandSource, T> argumentBuilder(final @NotNull String name, @NotNull final ArgumentType<T> argumentType) {
-        Preconditions.checkNotNull(name, "'name' must not be null!");
-        Preconditions.checkNotNull(argumentType, "'argumentType' must not be null!");
-
-        return RequiredArgumentBuilder.argument(name, argumentType);
-    }
 }

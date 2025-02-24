@@ -9,6 +9,7 @@ import com.itsschatten.yggdrasil.items.SkinTexture;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ResolvableProfile;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.profile.PlayerTextures;
@@ -46,6 +47,18 @@ public final class SkullManipulator implements ItemManipulator {
     private final boolean forceNameRemoval;
 
     /**
+     * Constructs a SkullManipulator using a {@link Player}.
+     *
+     * @param player The player to use as the skin.
+     */
+    public SkullManipulator(final @NotNull Player player) {
+        this.uuid = player.getUniqueId();
+        this.forceNameRemoval = false;
+        this.texture = null;
+        this.skin = null;
+    }
+
+    /**
      * Constructs a SkullManipulator using a {@link UUID}.
      *
      * @param uuid The UUID of to use as the skin.
@@ -69,6 +82,20 @@ public final class SkullManipulator implements ItemManipulator {
         this.texture = null;
         this.skin = null;
     }
+
+    /**
+     * Constructs a SkullManipulator using a {@link Player} with the ability to override the name.
+     *
+     * @param player           The player to use as the skin.
+     * @param forceNameRemoval If the name should be removed from the skull data.
+     */
+    public SkullManipulator(final @NotNull Player player, boolean forceNameRemoval) {
+        this.uuid = player.getUniqueId();
+        this.forceNameRemoval = forceNameRemoval;
+        this.texture = null;
+        this.skin = null;
+    }
+
 
     /**
      * Constructs a SkullManipulator using a {@link SkinTexture}.

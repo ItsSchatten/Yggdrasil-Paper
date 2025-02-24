@@ -11,8 +11,7 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.apache.commons.lang.Validate;
-import org.apache.commons.lang3.builder.ToStringExclude;
+import org.apache.commons.lang3.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -46,7 +45,6 @@ public class AnvilGUI {
     /**
      * The AnvilGUI's that are open.
      */
-    @ToStringExclude
     @Getter
     @Accessors(fluent = true)
     private static final Map<Inventory, AnvilGUI> OPEN_ANVILS = new HashMap<>();
@@ -240,39 +238,15 @@ public class AnvilGUI {
     }
 
     /**
-     * Sets the title for the inventory.
-     *
-     * @param title The title to set to, will be converted to a {@link Component}.
-     */
-    public final void setTitle(String title) {
-        this.title = StringUtil.color(title);
-        updateTitle();
-    }
-
-    /**
-     * Sets the title for the inventory.
-     *
-     * @param title The title to set.
-     */
-    public final void setTitle(Component title) {
-        this.title = title;
-        updateTitle();
-    }
-
-    /**
-     * Updates the title to the inventory.
-     */
-    private void updateTitle() {
-        if (this.inventory != null && (this.player != null || this.holder != null)) {
-            view.setTitle(LegacyComponentSerializer.legacySection().serialize(this.title));
-        }
-    }
-
-    /**
      * The builder.
      */
     public static class AnvilGUIBuilder {
 
+        /**
+         * Set the title for the GUI.
+         *
+         * @return this builder for chaining.
+         */
         public AnvilGUIBuilder title(Component title) {
             this.title = title;
             return this;

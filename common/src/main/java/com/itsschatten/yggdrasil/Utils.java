@@ -1,8 +1,10 @@
 package com.itsschatten.yggdrasil;
 
 import com.google.common.io.ByteStreams;
+import com.mojang.brigadier.Message;
 import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.MessageComponentSerializer;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.audience.Audience;
@@ -22,16 +24,18 @@ import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 import org.intellij.lang.annotations.Pattern;
 import org.intellij.lang.annotations.Subst;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 /**
@@ -66,13 +70,72 @@ public final class Utils {
     }
 
     /**
+     * Generate a file based from a resource and into the provided path.
+     *
+     * @param path The path to place the generated file.
+     * @param name The name of the file to generate.
+     * @return The made {@link File}.
+     * @throws IOException Thrown if a file cannot be made.
+     */
+    public static @NotNull File makeFile(final @NotNull Path path, final String name) throws IOException {
+        final File file = new File(path.toFile(), name);
+
+        // Check if the file exists; if it doesn't create it and any required subdirectories.
+        if (!file.exists()) {
+            if (file.getParentFile().mkdirs()) {
+                try (final InputStream stream = Utils.class.getResourceAsStream("/" + name)) {
+                    if (stream != null)
+                        Files.copy(stream, Paths.get(file.toURI()), StandardCopyOption.REPLACE_EXISTING);
+                }
+            } else {
+                if (file.createNewFile()) {
+                    try (final InputStream stream = Utils.class.getResourceAsStream("/" + name)) {
+                        if (stream != null)
+                            Files.copy(stream, Paths.get(file.toURI()), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+        }
+
+        return file;
+    }
+
+    /**
+     * Generate a file based from a resource and into the provided path.
+     *
+     * @param path The path to place the generated file.
+     * @param name The name of the file to generate.
+     * @throws IOException Thrown if a file cannot be made.
+     */
+    public static void generateFile(final @NotNull Path path, final String name) throws IOException {
+        final File file = new File(path.toFile(), name);
+
+        // Check if the file exists; if it doesn't create it and any required subdirectories.
+        if (!file.exists()) {
+            if (file.getParentFile().mkdirs()) {
+                try (final InputStream stream = Utils.class.getResourceAsStream("/" + name)) {
+                    if (stream != null)
+                        Files.copy(stream, Paths.get(file.toURI()), StandardCopyOption.REPLACE_EXISTING);
+                }
+            } else {
+                if (file.createNewFile()) {
+                    try (final InputStream stream = Utils.class.getResourceAsStream("/" + name)) {
+                        if (stream != null)
+                            Files.copy(stream, Paths.get(file.toURI()), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Utility method to quickly create a {@link NamespacedKey} based on this classes {@link JavaPlugin instance}.
      *
      * @param value The name of this tag.
      * @return A new {@link NamespacedKey} with the {@link JavaPlugin java plugin instance} of this class.
      */
     @Contract("_ -> new")
-    public static @NotNull NamespacedKey makeNamespacedKey(@NotNull final String value) {
+    public static @NotNull NamespacedKey makeNSKey(@NotNull final String value) {
         return new NamespacedKey(getInstance(), value);
     }
 
@@ -121,56 +184,58 @@ public final class Utils {
     /**
      * Sends a message of an error if the {@link Player} has the developer permission.
      *
-     * @param player    The player to send the message to.
+     * @param audience  The audience to send the message to.
      * @param throwable The error to send.
      */
-    public static void sendDeveloperErrorMessage(final @NotNull Player player, final Throwable throwable) {
+    public static void sendDeveloperErrorMessage(final @NotNull Audience audience, final Throwable throwable) {
         // If the user has the developer permission, send them information on the error that occurred.
-        if (player.hasPermission(getInstance().getName() + ".developer")) {
-            // The message that we want to send.
-            Component message = StringUtil.color("""
-                    <red>Some error occurred while attempting that action:
-                    <gray>Cause: <yellow>{cause}
-                    <gray>Message: <yellow>{message}
-                    <gray>Stack Trace:
-                    <reset>
-                    """.replace("{cause}", throwable.getCause() == null ? "N/A" : throwable.getCause().toString())
-                    .replace("{message}", throwable.getMessage() == null ? "N/A" : throwable.getMessage()));
+        if ((audience instanceof Player player) && !player.hasPermission(getInstance().getName() + ".developer")) {
+            return;
+        }
 
-            // Stack trace to send in chat.
-            final StringBuilder startBuilder = new StringBuilder();
-            final StackTraceElement[] trace = throwable.getStackTrace();
-            if (trace.length > 0) {
-                for (int i = 0; i < 5; i++) {
-                    if (trace[i].toString().toLowerCase().contains("com.itsschatten") || trace[i].toString().toLowerCase().contains(instance.getClass().getPackageName())) {
-                        startBuilder.append("<aqua>").append(trace[i]).append("<red>\n");
-                        continue;
-                    }
-                    startBuilder.append("<red>").append(trace[i]).append("\n");
-                }
-            }
+        // The message that we want to send.
+        Component message = StringUtil.color("""
+                <red>Some error occurred while attempting that action:
+                <gray>Cause: <yellow>{cause}
+                <gray>Message: <yellow>{message}
+                <gray>Stack Trace:
+                <reset>
+                """.replace("{cause}", throwable.getCause() == null ? "N/A" : throwable.getCause().toString())
+                .replace("{message}", throwable.getMessage() == null ? "N/A" : throwable.getMessage()));
 
-            // Append the start of the trace to the main message.
-            final String startOfTrace = startBuilder.toString();
-            message = message.append(StringUtil.color(startOfTrace));
-
-            // Use this for a hover event on the message to show the full stacktrace in the menu.
-            final StringBuilder endBuilder = new StringBuilder();
-            for (StackTraceElement stackTraceElement : trace) {
-                // If the element contains com.itsschatten highlight it in blue.
-                if (stackTraceElement.toString().contains("com.itsschatten") || stackTraceElement.toString().contains(instance.getClass().getPackageName())) {
-                    endBuilder.append("<aqua>").append(stackTraceElement).append("<gray>\n");
+        // Stack trace to send in chat.
+        final StringBuilder startBuilder = new StringBuilder();
+        final StackTraceElement[] trace = throwable.getStackTrace();
+        if (trace.length > 0) {
+            for (int i = 0; i < 5; i++) {
+                if (trace[i].toString().toLowerCase().contains("com.itsschatten") || trace[i].toString().toLowerCase().contains(instance.getClass().getPackageName())) {
+                    startBuilder.append("<aqua>").append(trace[i]).append("<red>\n");
                     continue;
                 }
-                // Otherwise, leave it as gray and append the message.
-                endBuilder.append(stackTraceElement).append("\n");
+                startBuilder.append("<red>").append(trace[i]).append("\n");
             }
-            // Adds the hover event and finally sends the message to the viewer of this menu.
-            final String hoverStack = endBuilder.toString();
-            message = message.hoverEvent(StringUtil.color("<gray>" + hoverStack).asHoverEvent());
-
-            player.sendMessage(message);
         }
+
+        // Append the start of the trace to the main message.
+        final String startOfTrace = startBuilder.toString();
+        message = message.append(StringUtil.color(startOfTrace));
+
+        // Use this for a hover event on the message to show the full stacktrace in the menu.
+        final StringBuilder endBuilder = new StringBuilder();
+        for (StackTraceElement stackTraceElement : trace) {
+            // If the element contains com.itsschatten highlight it in blue.
+            if (stackTraceElement.toString().contains("com.itsschatten") || stackTraceElement.toString().contains(instance.getClass().getPackageName())) {
+                endBuilder.append("<aqua>").append(stackTraceElement).append("<gray>\n");
+                continue;
+            }
+            // Otherwise, leave it as gray and append the message.
+            endBuilder.append(stackTraceElement).append("\n");
+        }
+        // Adds the hover event and finally sends the message to the viewer of this menu.
+        final String hoverStack = endBuilder.toString();
+        message = message.hoverEvent(StringUtil.color("<gray>" + hoverStack).asHoverEvent());
+
+        audience.sendMessage(message);
     }
 
     /**
@@ -181,7 +246,10 @@ public final class Utils {
      * @param items The array of items that is to be converted.
      * @return Returns the encoded {@link ItemStack} array.
      * @throws IllegalStateException If unable to save the ItemStack, this is thrown.
+     * @deprecated Deprecated in favor of {@link ItemStack#serializeAsBytes()} or {@link ItemStack#serializeItemsAsBytes(Collection)}
      */
+    @Deprecated(forRemoval = true, since = "2.1.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "2.2.0")
     public static @NotNull String convertItemStackToBase64(ItemStack[] items) throws IllegalStateException {
         try {
             final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -210,8 +278,11 @@ public final class Utils {
      * @param data Base64 string to convert to {@link ItemStack} array.
      * @return {@link ItemStack} array created from the Base64 string, may be empty.
      * @throws IOException Thrown if unable to decode a class type.
+     * @deprecated Deprecated in favor of {@link ItemStack#deserializeBytes(byte[])} or {@link ItemStack#deserializeItemsFromBytes(byte[])}
      */
     @Contract("null -> new")
+    @Deprecated(forRemoval = true, since = "2.1.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "2.2.0")
     public static ItemStack @NotNull [] getItemStackFromBase64(String data) throws IOException {
         if (data == null) return new ItemStack[0];
         try {
@@ -353,6 +424,26 @@ public final class Utils {
     }
 
     /**
+     * Utility method to quickly convert a {@link String} into a {@link Message} for use with Brigadier commands.
+     *
+     * @param message The message to send.
+     * @return Returns a {@link Message} using {@link MessageComponentSerializer#message()}.
+     */
+    public static @NotNull Message message(@NotNull String message) {
+        return message(StringUtil.color(message));
+    }
+
+    /**
+     * Utility method to quickly convert a {@link String} into a {@link Message} for use with Brigadier commands.
+     *
+     * @param message The message to send.
+     * @return Returns a {@link Message} using {@link MessageComponentSerializer#message()}.
+     */
+    public static @NotNull Message message(@NotNull Component message) {
+        return MessageComponentSerializer.message().serialize(message);
+    }
+
+    /**
      * Tell the sender of a command a translatable message
      * using either provided lang files in resource packs or server-side translation files.
      *
@@ -468,6 +559,33 @@ public final class Utils {
         audience.sendMessage(StringUtil.color(message));
     }
 
+    /**
+     * Method to quickly tell an the {@link CommandSourceStack} of a command an empty line.
+     *
+     * @param source The {@link CommandSourceStack sender} to send the message to.
+     */
+    public static void emptyLine(@NotNull CommandSourceStack source) {
+        emptyLine(source.getSender());
+    }
+
+    /**
+     * Method to quickly tell an the {@link CommandSourceStack} of a command (taken from the context) an empty line.
+     *
+     * @param context The command context to pull the sender from.
+     */
+    public static void emptyLine(@NotNull CommandContext<CommandSourceStack> context) {
+        emptyLine(context.getSource().getSender());
+    }
+
+    /**
+     * Method to quickly tell an {@link Audience} an empty line.
+     *
+     * @param audience The audience to send the message to.
+     */
+    public static void emptyLine(@NotNull Audience audience) {
+        audience.sendMessage(Component.empty());
+    }
+
     // TODO: Convert 'tell' to use Audience?
 
     /**
@@ -508,15 +626,8 @@ public final class Utils {
      */
     // FIXME: Remove unstable when stable.
     @SuppressWarnings("UnstableApiUsage")
-    public static void tell(CommandSourceStack source, @NotNull String message, Collection<String> messages) {
-        if (!message.isBlank()) {
-            source.getSender().sendMessage(StringUtil.color(message));
-        }
-
-        for (final String msg : messages) {
-            if (msg.isBlank()) continue;
-            source.getSender().sendMessage(StringUtil.color(msg));
-        }
+    public static void tell(@NotNull CommandSourceStack source, @NotNull String message, Collection<String> messages) {
+        tell(source.getSender(), message, messages);
     }
 
     /**
@@ -543,25 +654,18 @@ public final class Utils {
      */
     // FIXME: Remove unstable when stable.
     @SuppressWarnings("UnstableApiUsage")
-    public static void tell(CommandSourceStack source, Component message, Collection<Component> messages) {
-        if (message != null) {
-            source.getSender().sendMessage(message);
-        }
-
-        for (final Component msg : messages) {
-            if (msg == null) continue;
-            source.getSender().sendMessage(msg);
-        }
+    public static void tell(@NotNull CommandSourceStack source, Component message, Collection<Component> messages) {
+        tell(source.getSender(), message, messages);
     }
 
     /**
-     * Tell the specified {@link CommandSender} (either a player, console, or command block) the message(s) supplied.
+     * Tell the specified {@link Audience} (either a player, console, or command block) the message(s) supplied.
      *
-     * @param toWhom   The CommandSender we should send the message(s) to.
+     * @param toWhom   The {@link Audience} we should send the message(s) to.
      * @param message  The first message that should be sent to the supplied CommandSender.
      * @param messages An array of messages that are then iterated through and sent to the supplied CommandSender.
      */
-    public static void tell(@NotNull CommandSender toWhom, @NotNull String message, String... messages) {
+    public static void tell(@NotNull Audience toWhom, @NotNull String message, String... messages) {
         if (!message.isBlank())
             toWhom.sendMessage(StringUtil.color(message));
 
@@ -572,13 +676,13 @@ public final class Utils {
     }
 
     /**
-     * Tell the specified {@link CommandSender} (either a player, console, or command block) the message(s) supplied.
+     * Tell the specified {@link Audience} (either a player, console, or command block) the message(s) supplied.
      *
-     * @param toWhom   The CommandSender we should send the message(s) to.
+     * @param toWhom   The {@link Audience} we should send the message(s) to.
      * @param message  The first {@link Component} that should be sent to the supplied CommandSender.
      * @param messages An array of messages that are then iterated through and sent to the supplied CommandSender.
      */
-    public static void tell(@NotNull CommandSender toWhom, @Nullable Component message, Component... messages) {
+    public static void tell(@NotNull Audience toWhom, @Nullable Component message, Component... messages) {
         if (message != null)
             toWhom.sendMessage(message);
 
@@ -589,13 +693,13 @@ public final class Utils {
     }
 
     /**
-     * Tell the specified {@link CommandSender} (either a player, console, or command block) the message(s) supplied.
+     * Tell the specified {@link Audience} (either a player, console, or command block) the message(s) supplied.
      *
-     * @param toWhom   The CommandSender we should send the message(s) to.
+     * @param toWhom   The {@link Audience} we should send the message(s) to.
      * @param message  The first message that should be sent to the supplied CommandSender.
      * @param messages An iterable list of messages that are then iterated through and sent to the supplied CommandSender.
      */
-    public static void tell(@NotNull CommandSender toWhom, @NotNull String message, Iterable<String> messages) {
+    public static void tell(@NotNull Audience toWhom, @NotNull String message, Iterable<String> messages) {
         if (!message.isBlank())
             toWhom.sendMessage(StringUtil.color(message));
 
@@ -606,13 +710,13 @@ public final class Utils {
     }
 
     /**
-     * Tell the specified {@link CommandSender} (either a player, console, or command block) the message(s) supplied.
+     * Tell the specified {@link Audience} (either a player, console, or command block) the message(s) supplied.
      *
-     * @param toWhom   The CommandSender we should send the message(s) to.
+     * @param toWhom   The {@link Audience} we should send the message(s) to.
      * @param message  The first {@link Component} that should be sent to the supplied CommandSender.
      * @param messages An iterable list of messages that are then iterated through and sent to the supplied CommandSender.
      */
-    public static void tell(@NotNull CommandSender toWhom, @Nullable Component message, Iterable<Component> messages) {
+    public static void tell(@NotNull Audience toWhom, @Nullable Component message, Iterable<Component> messages) {
         if (message != null)
             toWhom.sendMessage(message);
 

@@ -1,15 +1,12 @@
 plugins {
     id("java")
 
-    alias(libs.plugins.paperweight)
     alias(libs.plugins.lombok.plugin)
     alias(libs.plugins.shadow)
 }
 
 group = "com.itsschatten"
 version = properties.getOrDefault("anvil-gui-version", "INVALID VERSION IN PROPERTIES") as String
-paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
-
 repositories {
     mavenCentral()
 
@@ -21,7 +18,7 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle(libs.versions.papermc.ver)
+    compileOnly(libs.paper)
 
     compileOnly(project(":common"))
     compileOnly(project(":menus"))
@@ -44,6 +41,7 @@ tasks {
     javadoc {
         options.encoding = Charsets.UTF_8.name()
 
+        options.windowTitle = "Yggdrasil AnvilGUI"
         (options as StandardJavadocDocletOptions).tags(
             listOf(
                 "todo:X",

@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 @Builder(builderClassName = "Builder")
 public class AnimatedSimpleButtonImpl extends AnimatedSimpleButton {
@@ -17,19 +18,32 @@ public class AnimatedSimpleButtonImpl extends AnimatedSimpleButton {
 
     final @Nullable String permission;
 
-    final @NotNull ItemCreator.ItemCreatorBuilder item;
-    final @Nullable ItemCreator.ItemCreatorBuilder animate;
+    final @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item;
+    final @Nullable Supplier<ItemCreator.ItemCreatorBuilder> animate;
 
     final int updateTime;
 
+    public AnimatedSimpleButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions,
+                                    @Nullable String permission,
+                                    @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item,
+                                    @Nullable Supplier<ItemCreator.ItemCreatorBuilder> animate,
+                                    int updateTime) {
+        this.position = position;
+        this.positions = positions;
+        this.permission = permission;
+        this.item = item;
+        this.animate = animate;
+        this.updateTime = updateTime;
+    }
+
     @Override
     public ItemCreator createItem() {
-        return this.item.build();
+        return this.item.get().build();
     }
 
     @Override
     public ItemCreator animate() {
-        return this.animate == null ? super.animate() : this.animate.build();
+        return this.animate == null ? super.animate() : this.animate.get().build();
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.itsschatten.yggdrasil.menus.buttons.premade;
+package com.itsschatten.yggdrasil.menus.buttons.impl;
 
 import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
@@ -7,11 +7,13 @@ import com.itsschatten.yggdrasil.menus.types.PageMenu;
 import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
 import com.itsschatten.yggdrasil.menus.utils.MenuRunnable;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.bukkit.event.inventory.ClickType;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Supplier;
 
 @ApiStatus.Internal
 @ApiStatus.NonExtendable
@@ -20,7 +22,7 @@ public final class PageNavigationButtonImpl extends Button {
     /**
      * The builder of for this button item.
      */
-    private final ItemCreator.ItemCreatorBuilder item;
+    private final @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item;
 
     /**
      * The page number to switch to.
@@ -37,7 +39,7 @@ public final class PageNavigationButtonImpl extends Button {
      */
     private final MenuRunnable runnable;
 
-    public PageNavigationButtonImpl(ItemCreator.ItemCreatorBuilder item, int pageNumber, InventoryPosition position, MenuRunnable runnable) {
+    public PageNavigationButtonImpl(@NotNull Supplier<ItemCreator.ItemCreatorBuilder> item, int pageNumber, InventoryPosition position, MenuRunnable runnable) {
         this.item = item;
         this.pageNumber = pageNumber;
         this.position = position;
@@ -62,7 +64,7 @@ public final class PageNavigationButtonImpl extends Button {
      */
     @Override
     public ItemCreator createItem() {
-        return this.item.build();
+        return this.item.get().build();
     }
 
     /**

@@ -36,12 +36,23 @@ import java.util.stream.Stream;
  * @since 2.0.0
  */
 @ApiStatus.Internal
-public class DarkRainbowResolver implements Modifying, Examinable {
+public final class DarkRainbowResolver implements Modifying, Examinable {
 
     // Character to designate the reverse of this rainbow.
     private static final String REVERSE = "!";
+
     // The tag name.
     private static final String DARK_RAINBOW = "dark_rainbow";
+
+    // Resolver instance.
+    public static final TagResolver RESOLVER = TagResolver.resolver(DARK_RAINBOW, DarkRainbowResolver::create);
+
+    private static final ComponentFlattener LENGTH_CALCULATOR = ComponentFlattener.builder()
+            .mapper(TextComponent.class, TextComponent::content)
+            .unknownMapper(x -> "_") // every unknown component gets a single color
+            .build();
+
+    private final boolean reversed;
 
     // The colors.
     private TextColor[] RAINBOW_COLORS = new TextColor[]{
@@ -54,18 +65,11 @@ public class DarkRainbowResolver implements Modifying, Examinable {
             TextColor.fromHexString("#ee82ee")
     };
 
-    private static final ComponentFlattener LENGTH_CALCULATOR = ComponentFlattener.builder()
-            .mapper(TextComponent.class, TextComponent::content)
-            .unknownMapper(x -> "_") // every unknown component gets a single color
-            .build();
-
-    // Resolver instance.
-    public static final TagResolver RESOLVER = TagResolver.resolver(DARK_RAINBOW, DarkRainbowResolver::create);
-
     // Have we visited?
     private boolean visited;
 
     // The size.
+
     @Getter
     @Accessors(fluent = true)
     private int size = 0;
@@ -73,11 +77,49 @@ public class DarkRainbowResolver implements Modifying, Examinable {
     private int disableApplyingColorDepth = -1;
 
     private int index = 0;
+
     private int colorIndex = 0;
 
     private float factorStep = 0;
+
     private float phase;
-    private final boolean reversed;
+
+    private DarkRainbowResolver(final boolean reversed, final float phase) {
+        this.reversed = reversed;
+        this.phase = phase;
+
+        if (reversed) {
+            final List<TextColor> reversedColors = new ArrayList<>(List.of(RAINBOW_COLORS));
+            Collections.reverse(reversedColors);
+            this.RAINBOW_COLORS = reversedColors.toArray(new TextColor[0]);
+        }
+
+    }
+
+    @Contract("_, _ -> new")
+    static @NotNull Tag create(final @NotNull ArgumentQueue args, final Context ctx) {
+        boolean reversed = false;
+        float phase = 0;
+
+        if (args.hasNext()) {
+            if (args.hasNext()) {
+                String value = args.pop().value();
+                if (value.startsWith(REVERSE)) {
+                    reversed = true;
+                    value = value.substring(REVERSE.length());
+                }
+                if (!value.isEmpty()) {
+                    try {
+                        phase = Integer.parseInt(value);
+                    } catch (final NumberFormatException ex) {
+                        throw ctx.newException("Expected phase, got " + value);
+                    }
+                }
+            }
+        }
+
+        return new DarkRainbowResolver(reversed, phase);
+    }
 
     @Override
     public void visit(@NotNull Node current, int depth) {
@@ -148,44 +190,7 @@ public class DarkRainbowResolver implements Modifying, Examinable {
         return Component.empty().mergeStyle(current);
     }
 
-    @Contract("_, _ -> new")
-    static @NotNull Tag create(final @NotNull ArgumentQueue args, final Context ctx) {
-        boolean reversed = false;
-        float phase = 0;
-
-        if (args.hasNext()) {
-            if (args.hasNext()) {
-                String value = args.pop().value();
-                if (value.startsWith(REVERSE)) {
-                    reversed = true;
-                    value = value.substring(REVERSE.length());
-                }
-                if (!value.isEmpty()) {
-                    try {
-                        phase = Integer.parseInt(value);
-                    } catch (final NumberFormatException ex) {
-                        throw ctx.newException("Expected phase, got " + value);
-                    }
-                }
-            }
-        }
-
-        return new DarkRainbowResolver(reversed, phase);
-    }
-
-    private DarkRainbowResolver(final boolean reversed, final float phase) {
-        this.reversed = reversed;
-        this.phase = phase;
-
-        if (reversed) {
-            final List<TextColor> reversedColors = new ArrayList<>(List.of(RAINBOW_COLORS));
-            Collections.reverse(reversedColors);
-            this.RAINBOW_COLORS = reversedColors.toArray(new TextColor[0]);
-        }
-
-    }
-
-    protected void init() {
+    private void init() {
         int sectorLength = this.size() / (RAINBOW_COLORS.length - 1);
         if (sectorLength < 1) {
             sectorLength = 1;
@@ -195,7 +200,7 @@ public class DarkRainbowResolver implements Modifying, Examinable {
         this.index = 0;
     }
 
-    protected void advanceColor() {
+    private void advanceColor() {
         // color switch needed?
         this.index++;
         if (this.factorStep * this.index > 1) {
@@ -204,7 +209,7 @@ public class DarkRainbowResolver implements Modifying, Examinable {
         }
     }
 
-    protected TextColor color() {
+    private TextColor color() {
         float factor = this.factorStep * (this.index + this.phase);
         // loop around if needed
         if (factor > 1) {

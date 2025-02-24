@@ -34,7 +34,7 @@ import java.util.stream.Stream;
  * @since 2.0.0
  */
 @ApiStatus.Internal
-public class AlternateResolver implements Modifying, Examinable {
+public final class AlternateResolver implements Modifying, Examinable {
 
     // Hex starting character.
     private static final char HEX = '#';

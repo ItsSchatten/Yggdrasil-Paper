@@ -40,6 +40,7 @@ tasks {
     javadoc {
         options.encoding = Charsets.UTF_8.name()
 
+        options.windowTitle = "Yggdrasil Velocity"
         (options as StandardJavadocDocletOptions).tags(
             listOf(
                 "todo:X",

@@ -2,12 +2,11 @@ package com.itsschatten.yggdrasil.menus.buttons;
 
 import com.itsschatten.yggdrasil.TimeUtils;
 import com.itsschatten.yggdrasil.Utils;
+import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.interfaces.AlternativeDisplayItem;
 import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
-import com.itsschatten.yggdrasil.items.ItemCreator;
-import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
@@ -53,6 +52,11 @@ public abstract class DynamicButton extends Button implements AlternativeDisplay
      * @return Returns {@link #getInnerStack()}
      */
     public final ItemStack displayItem() {
+        // This is here to ensure that the inner stack has been initialized.
+        if (innerStack == null) {
+            getInnerStack();
+        }
+
         return innerStack;
     }
 

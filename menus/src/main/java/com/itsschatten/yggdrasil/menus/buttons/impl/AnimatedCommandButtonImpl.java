@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 @Builder(builderClassName = "Builder")
 public class AnimatedCommandButtonImpl extends AnimatedCommandButton {
@@ -17,8 +18,8 @@ public class AnimatedCommandButtonImpl extends AnimatedCommandButton {
 
     final @Nullable String permission;
 
-    final @NotNull ItemCreator.ItemCreatorBuilder item;
-    final @Nullable ItemCreator.ItemCreatorBuilder animate;
+    final @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item;
+    final @Nullable Supplier<ItemCreator.ItemCreatorBuilder> animate;
 
     final int updateTime;
 
@@ -27,7 +28,11 @@ public class AnimatedCommandButtonImpl extends AnimatedCommandButton {
     final boolean console;
     final boolean closeAfter;
 
-    public AnimatedCommandButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions, @Nullable String permission, @NotNull ItemCreator.ItemCreatorBuilder item, @Nullable ItemCreator.ItemCreatorBuilder animate, int updateTime, @NotNull String command, boolean console, boolean closeAfter) {
+    public AnimatedCommandButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions,
+                                     @Nullable String permission,
+                                     @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item,
+                                     @Nullable Supplier<ItemCreator.ItemCreatorBuilder> animate,
+                                     int updateTime, @NotNull String command, boolean console, boolean closeAfter) {
         this.position = position;
         this.positions = positions;
         this.permission = permission;
@@ -41,12 +46,12 @@ public class AnimatedCommandButtonImpl extends AnimatedCommandButton {
 
     @Override
     public ItemCreator createItem() {
-        return this.item.build();
+        return this.item.get().build();
     }
 
     @Override
     public ItemCreator animate() {
-        return this.animate == null ? super.animate() : this.animate.build();
+        return this.animate == null ? super.animate() : this.animate.get().build();
     }
 
     @Override

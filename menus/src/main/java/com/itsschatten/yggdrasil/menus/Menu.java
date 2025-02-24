@@ -88,7 +88,7 @@ public abstract class Menu extends AbstractMenuInventory {
     protected Set<IMenuHolder> viewers = new HashSet<>();
 
     /**
-     * Are we opening a new menu?
+     * If we are going to open a new Menu instead of closing out of it entirely.
      * --- GETTER ---
      *
      * @return Returns if this menu is opening new.
@@ -125,7 +125,7 @@ public abstract class Menu extends AbstractMenuInventory {
      */
     @ApiStatus.Internal
     public Menu() {
-        this.register = new OneTimeRunnable(this::makeButtons);
+        this.register = new OneTimeRunnable(() -> makeButtons());
     }
 
     /**
@@ -286,7 +286,7 @@ public abstract class Menu extends AbstractMenuInventory {
             if (button.getPermission() != null) {
                 if (getViewer().getBase().hasPermission(button.getPermission())) {
                     if (button.getPositions() != null && !button.getPositions().isEmpty()) {
-                        for (InventoryPosition position : button.getPositions()) {
+                        for (final InventoryPosition position : button.getPositions()) {
                             getInventory().forceSet(position, button);
                         }
                     } else {
@@ -373,9 +373,9 @@ public abstract class Menu extends AbstractMenuInventory {
         }
         setInventory(formInventory());
 
-        onOpen(user);
         Utils.debugLog("Display is called for " + getClass().getSimpleName() + ".");
         getInventory().display(user);
+        onOpen(user);
         user.updateMenu(this);
         postDisplay();
     }

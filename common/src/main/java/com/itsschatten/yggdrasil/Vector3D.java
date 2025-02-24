@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
  * Represents a position in a 3D space.
  * More specifically, this represents a block in a Minecraft world.
  */
-public class Vector3D {
+public final class Vector3D {
 
     /**
      * The 'x' coordinate.

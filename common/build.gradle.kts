@@ -1,14 +1,14 @@
 plugins {
-    id("java")
+    id("java-library")
 
-    alias(libs.plugins.paperweight)
+    //alias(libs.plugins.paperweight)
     alias(libs.plugins.lombok.plugin)
     alias(libs.plugins.shadow)
 }
 
 group = "com.itsschatten"
 version = properties.getOrDefault("version", "INVALID VERSION IN PROPERTIES") as String
-paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
+// paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
 
 repositories {
     mavenCentral()
@@ -21,7 +21,8 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle(libs.versions.papermc.ver)
+    //paperweight.paperDevBundle(libs.versions.papermc.ver)
+    compileOnly(libs.paper)
 
     implementation(libs.bundles.common)
     annotationProcessor(libs.lombok)
@@ -29,7 +30,7 @@ dependencies {
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
-    withJavadocJar()
+    withJavadocJar() // TODO: This is dumb and it doesn't work, for some reason. test this again please.
     withSourcesJar()
 }
 
@@ -41,6 +42,7 @@ tasks {
     javadoc {
         options.encoding = Charsets.UTF_8.name()
 
+        options.windowTitle = "Yggdrasil"
         (options as StandardJavadocDocletOptions).tags(
             listOf(
                 "todo:X",

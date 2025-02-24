@@ -1,5 +1,6 @@
 package com.itsschatten.yggdrasil.menus.buttons.interfaces;
 
+import com.itsschatten.yggdrasil.menus.buttons.impl.PageNavigationButtonImpl;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -19,7 +20,7 @@ public interface AlternativeDisplayItem {
      * @return Returns the provided {@link ItemStack}.
      * @see com.itsschatten.yggdrasil.menus.buttons.AnimatedButton
      * @see com.itsschatten.yggdrasil.menus.buttons.DynamicButton
-     * @see com.itsschatten.yggdrasil.menus.buttons.premade.PageNavigationButtonImpl
+     * @see PageNavigationButtonImpl
      */
     ItemStack displayItem();
 

@@ -58,13 +58,6 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
     private boolean addCounter = true;
 
     /**
-     * Should we add the page counter to the title?
-     */
-    @Setter
-    @Getter
-    private boolean addCounterToTitle = false;
-
-    /**
      * If true, it will remove any navigational buttons from view if the viewer cannot go to the page.
      */
     @Setter
@@ -385,12 +378,6 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * Sets the titles and buttons for this menu.
      */
     private void updateTitleAndButtons() {
-        // Do we want to add the counting string to the title?
-        if (addCounterToTitle) {
-            final boolean hasPages = pages.size() > 1;
-            updateTitle(this.getInventory().getTitle() + (hasPages ? " " + getCounterString() : ""));
-        }
-
         // Are we adding a counter, and do we have a button to use?
         if (addCounter && getCounterButton() != null) {
             // Are we hiding navigation?
@@ -580,7 +567,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
         return NavigationButton.builder()
                 .material(Material.ARROW)
                 .name("<yellow>Next >")
-                .options(ItemOptions.HIDE_ALL_FLAGS.toBuilder().model(Key.key("schatten:arrow_next")).build())
+                .options(ItemOptions.HIDE_ALL_FLAGS.toBuilder().build())
                 .runnable((user, menu, type) -> {
                     final boolean canGo = page < pages.size();
                     if (canGo) {
@@ -589,7 +576,6 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
                         forceDrawPage();
                     } else {
                         menu.getViewer().tell("<red>You cannot go forward any further!");
-                        animateTitle("<red>You can't go any further!", 40L);
                     }
                 })
                 .position(InventoryPosition.of(getInventory().getRows() - 1, 5))
@@ -607,7 +593,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
         return NavigationButton.builder()
                 .material(Material.ARROW)
                 .name("<yellow>< Previous")
-                .options(ItemOptions.HIDE_ALL_FLAGS.toBuilder().model(Key.key("schatten:arrow_back")).build())
+                .options(ItemOptions.HIDE_ALL_FLAGS.toBuilder().build())
                 .runnable((user, menu, type) -> {
                     final boolean canGo = page > 1;
                     if (canGo) {
@@ -616,7 +602,6 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
                         forceDrawPage();
                     } else {
                         menu.getViewer().tell("<red>You cannot go backwards any further!");
-                        animateTitle("<red>No previous page!", 40L);
                     }
                 })
                 .position(InventoryPosition.of(getInventory().getRows() - 1, 3))
@@ -691,7 +676,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
     @Unmodifiable
     public final List<T> getValues() {
         if (this.page == 0 || this.pages == null || this.pages.isEmpty()) return Collections.emptyList();
-        org.apache.commons.lang.Validate.isTrue(this.pages.containsKey(this.page - 1), "Menu " + this + " does not contain page #" + (this.page - 1));
+        org.apache.commons.lang3.Validate.isTrue(this.pages.containsKey(this.page - 1), "Menu " + this + " does not contain page #" + (this.page - 1));
 
         return Collections.unmodifiableList(this.pages.get(this.page - 1));
     }

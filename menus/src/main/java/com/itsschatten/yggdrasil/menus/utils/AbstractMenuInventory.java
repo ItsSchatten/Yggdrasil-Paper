@@ -352,37 +352,4 @@ public abstract class AbstractMenuInventory {
         inventory.clearSlot(row, column);
     }
 
-    /**
-     * Update the title of the inventory.
-     *
-     * @param title The title that the inventory should be updated to.
-     * @see MenuInventory#updateTitle(String)
-     */
-    public final void updateTitle(final String title) {
-        inventory.updateTitle(title);
-    }
-
-    /**
-     * Animate the title of the inventory.
-     *
-     * @param title    The title that should be shown in the inventory.
-     * @param original The title to return to.
-     * @param delay    How long the title should be shown.
-     * @see MenuInventory#animateTitle(String, long)
-     */
-    public final void animateTitle(final String title, final String original, final long delay) {
-        inventory.animateTitle(title, original, delay);
-    }
-
-    /**
-     * Animate the title of the inventory.
-     *
-     * @param title The title that should be shown in the inventory.
-     * @param delay How long the title should be shown.
-     * @see MenuInventory#animateTitle(String, long)
-     */
-    public final void animateTitle(final String title, final long delay) {
-        inventory.animateTitle(title, delay);
-    }
-
 }

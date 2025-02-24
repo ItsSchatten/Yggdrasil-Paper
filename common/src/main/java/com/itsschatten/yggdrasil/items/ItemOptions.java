@@ -1,5 +1,7 @@
 package com.itsschatten.yggdrasil.items;
 
+import io.papermc.paper.datacomponent.DataComponentTypes;
+import io.papermc.paper.datacomponent.item.CustomModelData;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -48,7 +50,7 @@ public final class ItemOptions {
     /**
      * Preset options for hiding all flags on the item.
      *
-     * @implNote Due to the way Paper handles ItemFlags, flags that may not be appropriate for the item will be set.
+     * @implNote Due to the way Paper handles ItemFlags, flags that may not be appropriate for the item may remain unset.
      * I.E., if the item doesn't contain any enchantments but the flag for hiding enchantments is supplied, that flag will not be set on the item.
      */
     public static ItemOptions HIDE_ALL_FLAGS = ItemOptions.builder().itemFlags(Arrays.stream(ItemFlag.values()).collect(Collectors.toSet())).build();
@@ -63,7 +65,7 @@ public final class ItemOptions {
     // It is recommended to check the ItemMeta methods to determine if a variable should be a primitive or a value-based class.
 
     /**
-     * If the item's 'enchantment glint override' should be set, if assigned {@code null} the override will not be set.
+     * If the item's 'enchantment glint override' should be set, if assigned {@code null} the override will be removed.
      */
     private Boolean glow;
 
@@ -94,6 +96,11 @@ public final class ItemOptions {
      */
     private Key model;
 
+    /**
+     * Data for a custom model if one is applied.
+     */
+    private CustomModelData.Builder modelData;
+
     // TODO: Other components.
     // This needs a list.
 
@@ -117,6 +124,11 @@ public final class ItemOptions {
         if (meta.hasItemModel()) builder.model(meta.getItemModel());
         if (meta.hasEnchantmentGlintOverride()) builder.glow(meta.getEnchantmentGlintOverride());
         if (meta.hasRarity()) builder.rarity(meta.getRarity());
+
+        if (stack.hasData(DataComponentTypes.CUSTOM_MODEL_DATA)) {
+            final CustomModelData data = stack.getData(DataComponentTypes.CUSTOM_MODEL_DATA);
+            builder.modelData(data);
+        }
 
         return builder
                 .hideToolTip(meta.isHideTooltip())
@@ -157,6 +169,22 @@ public final class ItemOptions {
      * The builder for an {@link ItemOptions}.
      */
     public static class ItemOptionsBuilder {
+
+        public ItemOptionsBuilder modelData(final CustomModelData.Builder modelData) {
+            this.modelData = modelData;
+            return this;
+        }
+
+        public ItemOptionsBuilder modelData(final @NotNull CustomModelData data) {
+            this.modelData = CustomModelData.customModelData().addColors(data.colors()).addFlags(data.flags()).addFloats(data.floats()).addStrings(data.strings());
+            return this;
+        }
+
+        public ItemOptionsBuilder modelData(final @NotNull UnaryOperator<CustomModelData.Builder> data) {
+            this.modelData = data.apply(this.modelData == null ? CustomModelData.customModelData() : this.modelData);
+            return this;
+        }
+
 
         public ItemOptionsBuilder itemFlags(Set<ItemFlag> itemFlags) {
             this.itemFlags = itemFlags;

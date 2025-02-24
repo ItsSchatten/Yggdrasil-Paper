@@ -1,6 +1,7 @@
 package com.itsschatten.yggdrasil.menus.buttons.premade;
 
 import com.itsschatten.yggdrasil.items.ItemCreator;
+import com.itsschatten.yggdrasil.menus.buttons.impl.PageNavigationButtonImpl;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
 import com.itsschatten.yggdrasil.menus.utils.MenuRunnable;
 import lombok.Builder;
@@ -9,18 +10,19 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public final class PageNavigationButton {
 
     /**
      * The builder of for this button item.
      */
-    private final @NotNull Function<Integer, ItemCreator.ItemCreatorBuilder> item;
+    private final @NotNull Function<Integer, Supplier<ItemCreator.ItemCreatorBuilder>> item;
 
     /**
      * The builder for when this button is active.
      */
-    private final @Nullable Function<Integer, ItemCreator.ItemCreatorBuilder> active;
+    private final @Nullable Function<Integer, Supplier<ItemCreator.ItemCreatorBuilder>> active;
 
     /**
      * The page number to switch to.
@@ -38,7 +40,9 @@ public final class PageNavigationButton {
     private final MenuRunnable runnable;
 
     @Builder(toBuilder = true)
-    public PageNavigationButton(@NotNull Function<Integer, ItemCreator.ItemCreatorBuilder> item, @NotNull Function<Integer, ItemCreator.ItemCreatorBuilder> active, int pageNumber, InventoryPosition position, MenuRunnable runnable) {
+    public PageNavigationButton(@NotNull Function<Integer, Supplier<ItemCreator.ItemCreatorBuilder>> item,
+                                @Nullable Function<Integer, Supplier<ItemCreator.ItemCreatorBuilder>> active,
+                                int pageNumber, InventoryPosition position, MenuRunnable runnable) {
         this.item = item;
         this.active = active;
         this.pageNumber = pageNumber;
@@ -72,5 +76,5 @@ public final class PageNavigationButton {
         }
 
     }
-    
+
 }

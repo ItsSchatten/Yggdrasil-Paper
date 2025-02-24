@@ -5,7 +5,7 @@ import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.types.interfaces.Ticking;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;

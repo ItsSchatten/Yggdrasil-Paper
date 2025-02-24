@@ -4,8 +4,7 @@ import com.itsschatten.yggdrasil.StringUtil;
 import com.itsschatten.yggdrasil.anvilgui.AnvilGUI;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
-import net.kyori.adventure.text.Component;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -41,18 +40,6 @@ public interface Response extends BiConsumer<AnvilGUI, Player> {
                 anvilGUI.inventory().setItem(0, cloned);
             }
         };
-    }
-
-    @Contract(pure = true)
-    static @NotNull Response updateTitle(String title) {
-        Validate.notNull(title, "Title must not be null!");
-        return (anvilGUI, player) -> anvilGUI.setTitle(title);
-    }
-
-    @Contract(pure = true)
-    static @NotNull Response updateTitle(Component title) {
-        Validate.notNull(title, "Title must not be null!");
-        return (anvilGUI, player) -> anvilGUI.setTitle(title);
     }
 
     @Contract(pure = true)

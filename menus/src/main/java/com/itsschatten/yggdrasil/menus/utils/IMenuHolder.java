@@ -122,7 +122,6 @@ public interface IMenuHolder {
         }
 
         getBase().setMetadata(Menu.CURRENT_TAG, new FixedMetadataValue(Utils.getInstance(), menu));
-
     }
 
     /**

@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 @Builder(builderClassName = "Builder")
 public class SimpleButtonImpl extends SimpleButton {
@@ -17,9 +18,11 @@ public class SimpleButtonImpl extends SimpleButton {
 
     final @Nullable String permission;
 
-    final @NotNull ItemCreator.ItemCreatorBuilder item;
+    final @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item;
 
-    public SimpleButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions, @Nullable String permission, @NotNull ItemCreator.ItemCreatorBuilder item) {
+    public SimpleButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions,
+                            @Nullable String permission,
+                            @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item) {
         this.position = position;
         this.positions = positions;
         this.permission = permission;
@@ -28,7 +31,7 @@ public class SimpleButtonImpl extends SimpleButton {
 
     @Override
     public ItemCreator createItem() {
-        return this.item.build();
+        return this.item.get().build();
     }
 
     @Override

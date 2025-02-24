@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -176,6 +177,26 @@ public final class ItemCreator {
             this.lore = lore.stream().map(string -> StringUtil.color("<!i><gray>" + string)).toList();
             return this;
         }
+
+        public ItemCreatorBuilder options(final ItemOptions options) {
+            this.options = options;
+            return this;
+        }
+
+        public ItemCreatorBuilder options(final ItemOptions.@NotNull ItemOptionsBuilder builder) {
+            this.options = builder.build();
+            return this;
+        }
+
+        /**
+         * Returns this builder as a {@link Supplier}.
+         *
+         * @return Returns {@code this} as a Supplier.
+         */
+        public Supplier<ItemCreatorBuilder> supplier() {
+            return () -> this;
+        }
+
     }
 
 }

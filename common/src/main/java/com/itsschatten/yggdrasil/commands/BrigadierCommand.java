@@ -35,6 +35,17 @@ import java.util.function.Predicate;
 @ToString
 public abstract class BrigadierCommand implements Comparable<BrigadierCommand> {
 
+
+    /**
+     * Designates that the command has been a success at least once.
+     */
+    protected final static int SUCCESS = 1;
+
+    /**
+     * Designates nothing happened and the command failed.
+     */
+    protected final static int FAILURE = 0;
+
     /**
      * The description of the command.
      */
@@ -333,7 +344,6 @@ public abstract class BrigadierCommand implements Comparable<BrigadierCommand> {
      * @see #build()
      */
     public abstract LiteralArgumentBuilder<CommandSourceStack> command();
-
 
     /**
      * Util method to quickly to get a {@link LiteralArgumentBuilder}.

@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  *
  * @param <E> The type in this bag.
  */
-public class WeightedRandomBag<E> {
+public final class WeightedRandomBag<E> {
 
     // Proper map used to gather a random object.
     private final NavigableMap<Double, E> map;
@@ -33,7 +33,7 @@ public class WeightedRandomBag<E> {
     // The total sum of ALL weights currently in this bag.
     // This can be used to gather the percentage chance of an item.
     @Getter
-    private double total = 0;
+    private double totalWeight = 0;
 
     /**
      * Basic implementation that uses {@link ThreadLocalRandom#current()} as its Random instance.
@@ -47,7 +47,7 @@ public class WeightedRandomBag<E> {
      *
      * @param random The Random instance to use.
      */
-    public WeightedRandomBag(Random random) {
+    public WeightedRandomBag(final Random random) {
         this.random = random;
 
         this.map = new TreeMap<>();
@@ -61,12 +61,12 @@ public class WeightedRandomBag<E> {
      * @param result The object.
      * @return Returns this bag with the added result.
      */
-    public final WeightedRandomBag<E> add(double weight, E result) {
+    public WeightedRandomBag<E> add(double weight, E result) {
         if (weight <= 0) {
             return this;
         }
-        total += weight;
-        map.put(total, result);
+        totalWeight += weight;
+        map.put(totalWeight, result);
         backupMap.put(weight, result);
         return this;
     }
@@ -77,7 +77,7 @@ public class WeightedRandomBag<E> {
      * @param map The flipped map to add.
      * @return Returns this weighted bag.
      */
-    public final WeightedRandomBag<E> addFlippedMap(final @NotNull Map<E, Double> map) {
+    public WeightedRandomBag<E> addFlippedMap(final @NotNull Map<E, Double> map) {
         map.forEach((mat, chance) -> this.add(chance, mat));
         return this;
     }
@@ -88,7 +88,7 @@ public class WeightedRandomBag<E> {
      * @param map The map to add.
      * @return Returns this weighted bag.
      */
-    public final WeightedRandomBag<E> addMap(final @NotNull Map<Double, E> map) {
+    public WeightedRandomBag<E> addMap(final @NotNull Map<Double, E> map) {
         map.forEach(this::add);
         return this;
     }
@@ -99,7 +99,7 @@ public class WeightedRandomBag<E> {
      * @param map The map to add.
      * @return This weighted back.
      */
-    public final WeightedRandomBag<E> addMultiMap(final @NotNull Multimap<Double, E> map) {
+    public WeightedRandomBag<E> addMultiMap(final @NotNull Multimap<Double, E> map) {
         map.forEach(this::add);
         return this;
     }
@@ -110,8 +110,8 @@ public class WeightedRandomBag<E> {
      * @return Either <code>null</code> or an object from the map.
      */
     @Nullable
-    public final E next() {
-        double value = random.nextDouble() * total;
+    public E next() {
+        double value = random.nextDouble() * totalWeight;
         if (map.higherEntry(value) == null) {
             return null;
         }
@@ -125,8 +125,8 @@ public class WeightedRandomBag<E> {
      * @return Either <code>null</code> or an object from the map.
      */
     @Nullable
-    public final E next(Predicate<? super Map.Entry<Double, E>> filter) {
-        double value = random.nextDouble() * total;
+    public E next(Predicate<? super Map.Entry<Double, E>> filter) {
+        final double value = random.nextDouble() * totalWeight;
         final NavigableMap<Double, E> filtered = new TreeMap<>(map.entrySet().stream().filter(filter).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
         if (filtered.higherEntry(value) == null) {
             return null;
@@ -140,7 +140,7 @@ public class WeightedRandomBag<E> {
      * @param object The object to check.
      * @return Returns whatever {@link NavigableMap#containsValue(Object)} returns
      */
-    public final boolean contains(E object) {
+    public boolean contains(E object) {
         return map.containsValue(object);
     }
 
@@ -150,7 +150,7 @@ public class WeightedRandomBag<E> {
      * @return {@link NavigableMap#entrySet()}
      */
     @Contract(pure = true)
-    public final @NotNull Set<Map.Entry<Double, E>> getEntries() {
+    public @NotNull Set<Map.Entry<Double, E>> getEntries() {
         return map.entrySet();
     }
 
@@ -161,7 +161,7 @@ public class WeightedRandomBag<E> {
      */
     @Contract(pure = true)
     @Unmodifiable
-    public final @NotNull Map<Double, E> getMap() {
+    public @NotNull Map<Double, E> getMap() {
         return Collections.unmodifiableMap(map);
     }
 
@@ -171,7 +171,7 @@ public class WeightedRandomBag<E> {
      * @return Returns an unmodifiable map of the backup map.
      */
     @Unmodifiable
-    public final @NotNull Map<Double, Collection<E>> getBackupMap() {
+    public @NotNull Map<Double, Collection<E>> getBackupMap() {
         return Collections.unmodifiableMap(backupMap.asMap());
     }
 
@@ -180,7 +180,7 @@ public class WeightedRandomBag<E> {
      *
      * @return If the main map is empty or not.
      */
-    public final boolean isEmpty() {
+    public boolean isEmpty() {
         return map.isEmpty();
     }
 
@@ -189,12 +189,12 @@ public class WeightedRandomBag<E> {
      *
      * @return Returns a String of all the objects in this bag.
      */
-    public final @NotNull String toRawOdds() {
+    public @NotNull String toRawOdds() {
         final StringBuilder builder = new StringBuilder();
         for (Map.Entry<Double, Collection<E>> entry : backupMap.asMap().entrySet()) {
             for (E result : entry.getValue()) {
                 builder.append(result.toString()).append(':')
-                        // Uses Lang3 to strip the end '.0'.
+                        // Uses Lang3 to strip trailing '.0'.
                         .append(StringUtils.stripEnd(entry.getKey().toString(), ".0")).append(',');
             }
         }
@@ -204,12 +204,13 @@ public class WeightedRandomBag<E> {
         return builder.substring(0, lastOccurrence);
     }
 
+    @Contract(pure = true)
     @Override
-    public String toString() {
+    public @NotNull String toString() {
         return "WeightedRandomBag{" +
                 "map=" + map +
                 ", random=" + random +
-                ", total=" + total +
+                ", total=" + totalWeight +
                 '}';
     }
 

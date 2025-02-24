@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 @Builder(builderClassName = "Builder")
 public class MenuTriggerButtonImpl extends MenuTriggerButton {
@@ -21,11 +22,14 @@ public class MenuTriggerButtonImpl extends MenuTriggerButton {
 
     final @Nullable String permission;
 
-    final @NotNull ItemCreator.ItemCreatorBuilder item;
+    final @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item;
 
     final @NotNull BiFunction<IMenuHolder, ClickType, Menu> menu;
 
-    public MenuTriggerButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions, @Nullable String permission, @NotNull ItemCreator.ItemCreatorBuilder item, @NotNull BiFunction<IMenuHolder, ClickType, Menu> menu) {
+    public MenuTriggerButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions,
+                                 @Nullable String permission,
+                                 @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item,
+                                 @NotNull BiFunction<IMenuHolder, ClickType, Menu> menu) {
         this.position = position;
         this.positions = positions;
         this.permission = permission;
@@ -35,7 +39,7 @@ public class MenuTriggerButtonImpl extends MenuTriggerButton {
 
     @Override
     public ItemCreator createItem() {
-        return this.item.build();
+        return this.item.get().build();
     }
 
     @Override

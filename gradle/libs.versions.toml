@@ -10,7 +10,7 @@ configurate-ver = "4.1.2"
 
 lang-ver = "3.17.0"
 
-paperweight-ver = "2.0.0-beta.8"
+paperweight-ver = "2.0.0-beta.14"
 lombok-plugin-ver = "8.6"
 shadow-ver = "8.3.0"
 
@@ -21,13 +21,15 @@ lombok = { module = "org.projectlombok:lombok", version.ref = "lombok-ver" }
 
 velocity = { module = "com.velocitypowered:velocity-api", version.ref = "velocity-ver" }
 
-configurate = { module = "org.spongepowered:configurate-yaml", version.ref = "configurate-ver"}
+configurate = { module = "org.spongepowered:configurate-yaml", version.ref = "configurate-ver" }
 
 commons-lang = { module = "org.apache.commons:commons-lang3", version.ref = "lang-ver" }
 
+paper = { module = "io.papermc.paper:paper-api", version.ref = "papermc-ver" }
+
 # Bundles of libraries.
 [bundles]
-common = ["jetbrains-annotations", "lombok"]
+common = ["jetbrains-annotations", "lombok", "commons-lang"]
 
 # The plugins for the project.
 [plugins]

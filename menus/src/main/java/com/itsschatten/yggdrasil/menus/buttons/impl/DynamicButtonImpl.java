@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 @Builder(builderClassName = "Builder")
 public class DynamicButtonImpl extends DynamicButton {
@@ -21,14 +22,18 @@ public class DynamicButtonImpl extends DynamicButton {
 
     final @Nullable String permission;
 
-    final @NotNull ItemCreator.ItemCreatorBuilder item;
-    final @Nullable ItemCreator.ItemCreatorBuilder update;
+    final @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item;
+    final @Nullable Supplier<ItemCreator.ItemCreatorBuilder> update;
 
     final int updateTime;
 
     final @Nullable MenuRunnable onClick;
 
-    public DynamicButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions, @Nullable String permission, @NotNull ItemCreator.ItemCreatorBuilder item, @Nullable ItemCreator.ItemCreatorBuilder update, int updateTime, @Nullable MenuRunnable onClick) {
+    public DynamicButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions,
+                             @Nullable String permission,
+                             @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item,
+                             @Nullable Supplier<ItemCreator.ItemCreatorBuilder> update,
+                             int updateTime, @Nullable MenuRunnable onClick) {
         this.position = position;
         this.positions = positions;
         this.permission = permission;
@@ -40,7 +45,7 @@ public class DynamicButtonImpl extends DynamicButton {
 
     @Override
     public ItemCreator createItem() {
-        return this.item.build();
+        return this.item.get().build();
     }
 
     @Override
@@ -72,7 +77,7 @@ public class DynamicButtonImpl extends DynamicButton {
 
     @Override
     public ItemCreator updateStack() {
-        return this.update == null ? super.updateStack() : this.update.build();
+        return this.update == null ? super.updateStack() : this.update.get().build();
     }
 
     public static class Builder {

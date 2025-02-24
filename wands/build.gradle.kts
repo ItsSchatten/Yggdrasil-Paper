@@ -1,14 +1,12 @@
 plugins {
     id("java-library")
 
-    alias(libs.plugins.paperweight)
     alias(libs.plugins.lombok.plugin)
     alias(libs.plugins.shadow)
 }
 
 group = "com.itsschatten"
 version = properties.getOrDefault("wands-version", "INVALID VERSION IN PROPERTIES") as String
-paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
 
 repositories {
     mavenCentral()
@@ -20,7 +18,7 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle(libs.versions.papermc.ver)
+    compileOnly(libs.paper)
 
     compileOnly(project(":common"))
     implementation(libs.bundles.common)
@@ -41,6 +39,7 @@ tasks {
     javadoc {
         options.encoding = Charsets.UTF_8.name()
 
+        options.windowTitle = "Yggdrasil Wands"
         (options as StandardJavadocDocletOptions).tags(
             listOf(
                 "todo:X",

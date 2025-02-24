@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 @Builder(builderClassName = "Builder")
 public class ButtonImpl extends Button {
@@ -21,11 +22,14 @@ public class ButtonImpl extends Button {
 
     final @Nullable String permission;
 
-    final @NotNull ItemCreator.ItemCreatorBuilder item;
+    final @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item;
 
     final @Nullable MenuRunnable onClick;
 
-    public ButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions, @Nullable String permission, @NotNull ItemCreator.ItemCreatorBuilder item, @Nullable MenuRunnable onClick) {
+    public ButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions,
+                      @Nullable String permission,
+                      @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item,
+                      @Nullable MenuRunnable onClick) {
         this.position = position;
         this.positions = positions;
         this.permission = permission;
@@ -35,7 +39,7 @@ public class ButtonImpl extends Button {
 
     @Override
     public ItemCreator createItem() {
-        return item.build();
+        return item.get().build();
     }
 
     @Override

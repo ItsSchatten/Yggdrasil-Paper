@@ -1,7 +1,6 @@
 package com.itsschatten.yggdrasil.menus.utils;
 
 import com.itsschatten.yggdrasil.StringUtil;
-import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
@@ -59,12 +58,8 @@ public class MenuInventory implements InventoryHolder {
      * The title of this inventory.
      */
     @Getter
+    @Setter
     private String title;
-
-    /**
-     * The original title of this inventory.
-     */
-    private String originalTitle;
 
     /**
      * The viewer of this inventory.
@@ -94,11 +89,10 @@ public class MenuInventory implements InventoryHolder {
      */
     private MenuInventory(int size, @NotNull Menu menu, String title) {
         this.title = title;
-        this.originalTitle = title;
         this.rows = size / 9;
         this.contents = new ItemStack[size / 9][9];
         this.menu = menu;
-        this.bukkitInventory = Bukkit.createInventory(this, size, StringUtil.color(title));
+        this.bukkitInventory = Bukkit.createInventory(this, size, StringUtil.color(this.title));
     }
 
     /**
@@ -562,52 +556,6 @@ public class MenuInventory implements InventoryHolder {
         }
         final Inventory inventory = getBukkitInventory();
         inventory.setItem(columns * row + column, stack);
-    }
-
-    /**
-     * Update the title of the inventory.
-     *
-     * @param title The new inventory title.
-     */
-    public final void updateTitle(final String title) {
-        if (viewer == null) {
-            return;
-        }
-
-        this.originalTitle = this.title;
-        this.title = title;
-        sendTitleUpdate(title);
-    }
-
-    private void sendTitleUpdate(final String title) {
-        viewer.getBase().getOpenInventory().setTitle(title);
-    }
-
-    /**
-     * Animate a title for the inventory.
-     *
-     * @param title The title to animate.
-     * @param delay The delay before the title is reset to the first one.
-     */
-    public final void animateTitle(final String title, final long delay) {
-        animateTitle(title, this.originalTitle, delay);
-    }
-
-    /**
-     * Animate a title for the inventory.
-     *
-     * @param title    The title to animate.
-     * @param original The original title.
-     * @param delay    The delay before the title is reset to the first one.
-     */
-    public final void animateTitle(final String title, final String original, final long delay) {
-        sendTitleUpdate(title);
-        animateTask = Bukkit.getScheduler().runTaskLater(Utils.getInstance(), () -> {
-            if (viewer.getCurrentMenu() != null) {
-                sendTitleUpdate(original);
-            }
-            clearAnimateTask();
-        }, delay).getTaskId();
     }
 
     /**
