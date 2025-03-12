@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * The close button.
  */
-@lombok.Builder(toBuilder = true)
+@lombok.Builder
 public final class CloseButton extends Button {
 
     /**

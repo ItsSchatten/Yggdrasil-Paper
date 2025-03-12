@@ -105,6 +105,23 @@ public final class WeightedRandomBag<E> {
     }
 
     /**
+     * Attempt to calculate the chance of rolling a specific entry in the map.
+     *
+     * @param value The value to get the chance for.
+     * @return Returns a value that is likely greater or equal to 0.
+     * This is not a "qualified" percentage, instead returning a decimal value.
+     */
+    public double calculateChance(E value) {
+        final Map.Entry<Double, E> entry = backupMap.entries().stream().filter((ent) -> ent.getValue().equals(value)).findFirst().orElse(null);
+        // Couldn't find the entry, return 0.0D
+        if (entry == null) {
+            return 0.0D;
+        }
+
+        return entry.getKey() / getTotalWeight();
+    }
+
+    /**
      * Gets a nullable entry from {@link #map}
      *
      * @return Either <code>null</code> or an object from the map.

@@ -497,38 +497,33 @@ public abstract class Menu extends AbstractMenuInventory {
     @ApiStatus.Internal
     protected final @Nullable Button getButtonImpl(final ItemStack stack, final @NotNull List<Button> buttons) {
         for (final Button registeredButton : buttons) {
-
-            // Check if we have an animated button,
-            // because this button's ItemStack may be animated/changed we have to check it differently.
-            if (registeredButton instanceof final AnimatedButton animatedButton) {
-                if (animatedButton.getInnerStack().ensureServerConversions().isSimilar(stack)) {
-                    return animatedButton;
+            // Because Animated and Dynamic are switched in runtime, it's easier if we simply defer to known item type
+            // so we don't have to constantly check the item over and over again.
+            final ItemStack item = switch (registeredButton) {
+                case AnimatedButton animated -> animated.getInnerStack().ensureServerConversions();
+                case DynamicButton dynamicButton -> dynamicButton.getInnerStack().ensureServerConversions();
+                default -> {
+                    final ItemStack instance = registeredButton.getItem();
+                    yield instance == null ? null : instance.ensureServerConversions();
                 }
-            }
+            };
 
-            // Check if we have a dynamic button,
-            // because this button's ItemStack may change between registration and clicking we have
-            // to use the internal stack.
-            if (registeredButton instanceof final DynamicButton dynamic) {
-                if (dynamic.getInnerStack().ensureServerConversions().isSimilar(stack)) {
-                    return dynamic;
-                }
-            }
-
-            // If a registered button has a null item return, this is not checked for the animated buttons.
-            if (registeredButton.getItem() == null) continue;
+            // If a registered button has a null item return.
+            if (item == null) continue;
 
             // Ensuring all conversions have taken place on the item,
             // we check if it is similar to the provided stack or exactly equal to it.
-            if (registeredButton.getItem().ensureServerConversions().isSimilar(stack) || registeredButton.getItem().ensureServerConversions().equals(stack)) {
-                // Check if this button has permissions.
-                if (registeredButton.getPermission() != null)
+            if (item.isSimilar(stack) || item.equals(stack)) {
+                if (registeredButton.getPermission() != null) {
                     // We do have permissions, check if the main viewer of the menu has permission to click the button.
                     if (!getViewer().getBase().hasPermission(registeredButton.getPermission()))
                         return null;
+                }
+
                 return registeredButton;
             }
         }
+
         return null;
     }
 

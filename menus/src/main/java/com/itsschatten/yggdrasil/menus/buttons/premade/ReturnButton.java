@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Return button.
  */
-@Builder(toBuilder = true)
+@Builder
 public final class ReturnButton extends Button {
 
     /**

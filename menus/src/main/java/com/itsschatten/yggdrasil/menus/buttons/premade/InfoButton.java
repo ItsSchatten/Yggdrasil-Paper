@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * The info button.
  */
-@Builder(toBuilder = true)
+@Builder
 public final class InfoButton extends SimpleButton {
 
     /**

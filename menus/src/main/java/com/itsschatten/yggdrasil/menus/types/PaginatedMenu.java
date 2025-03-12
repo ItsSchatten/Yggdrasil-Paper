@@ -10,7 +10,6 @@ import com.itsschatten.yggdrasil.menus.buttons.premade.NavigationButton;
 import com.itsschatten.yggdrasil.menus.utils.*;
 import lombok.Getter;
 import lombok.Setter;
-import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.event.inventory.ClickType;
@@ -384,11 +383,11 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
             // If we are, check if we have more than 1 page.
             if (hideNav) {
                 if (pages.size() > 1) {
-                    registerPageButtons(getCounterButton());
+                    registerPageButtons(getCounterButton().build());
                 }
             } else {
                 // We are not hiding navigation, register the counter.
-                registerPageButtons(getCounterButton());
+                registerPageButtons(getCounterButton().build());
             }
         }
 
@@ -398,16 +397,21 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
             // Then register the button.
             final boolean hasNext = page < pages.size();
             if (hasNext && getNextButton() != null) {
-                registerPageButtons(getNextButton());
+                registerPageButtons(getNextButton().build());
             }
 
             final boolean hasPrevious = page > 1;
             if (hasPrevious && getPreviousButton() != null) {
-                registerPageButtons(getPreviousButton());
+                registerPageButtons(getPreviousButton().build());
             }
         } else {
             // We aren't, register the buttons.
-            registerPageButtons(getNextButton(), getPreviousButton());
+            if (getNextButton() != null) {
+                registerPageButtons(getNextButton().build());
+            }
+            if (getPreviousButton() != null) {
+                registerPageButtons(getPreviousButton().build());
+            }
         }
     }
 
@@ -533,11 +537,11 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
     /**
      * A {@link NavigationButton} used to show what page the viewer is on.
      *
-     * @return Returns a new {@link NavigationButton}.
+     * @return Returns a {@link NavigationButton} builder.
      * @see NavigationButton#builder()
      */
     @Nullable
-    public NavigationButton getCounterButton() {
+    public NavigationButton.NavigationButtonBuilder getCounterButton() {
         return NavigationButton.builder()
                 .material(Material.NAME_TAG)
                 .name(getCounterString())
@@ -552,18 +556,17 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
                     this.page = 1;
                     refreshPage();
                 })
-                .position(InventoryPosition.of(getInventory().getRows() - 1, 4))
-                .build();
+                .position(InventoryPosition.of(getInventory().getRows() - 1, 4));
     }
 
     /**
      * A {@link NavigationButton} used to go to the next page.
      *
-     * @return Returns a new {@link NavigationButton}.
+     * @return Returns a {@link NavigationButton} builder.
      * @see NavigationButton#builder()
      */
     @Nullable
-    public NavigationButton getNextButton() {
+    public NavigationButton.NavigationButtonBuilder getNextButton() {
         return NavigationButton.builder()
                 .material(Material.ARROW)
                 .name("<yellow>Next >")
@@ -578,18 +581,17 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
                         menu.getViewer().tell("<red>You cannot go forward any further!");
                     }
                 })
-                .position(InventoryPosition.of(getInventory().getRows() - 1, 5))
-                .build();
+                .position(InventoryPosition.of(getInventory().getRows() - 1, 5));
     }
 
     /**
      * A {@link NavigationButton} used to return to the previous page.
      *
-     * @return Returns a new {@link NavigationButton}.
+     * @return Returns a {@link NavigationButton} builder.
      * @see NavigationButton#builder()
      */
     @Nullable
-    public NavigationButton getPreviousButton() {
+    public NavigationButton.NavigationButtonBuilder getPreviousButton() {
         return NavigationButton.builder()
                 .material(Material.ARROW)
                 .name("<yellow>< Previous")
@@ -604,8 +606,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
                         menu.getViewer().tell("<red>You cannot go backwards any further!");
                     }
                 })
-                .position(InventoryPosition.of(getInventory().getRows() - 1, 3))
-                .build();
+                .position(InventoryPosition.of(getInventory().getRows() - 1, 3));
     }
 
     /**

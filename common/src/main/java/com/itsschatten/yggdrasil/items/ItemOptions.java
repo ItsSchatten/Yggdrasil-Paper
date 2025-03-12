@@ -13,6 +13,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemRarity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.inventory.meta.components.EquippableComponent;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -155,6 +156,17 @@ public final class ItemOptions {
 
         if (equipable != null) meta.setEquippable(equipable.apply(meta.getEquippable()));
         if (model != null) meta.setItemModel(NamespacedKey.fromString(model.asString()));
+        if (modelData != null) {
+            final CustomModelDataComponent component = meta.getCustomModelDataComponent();
+            final CustomModelData data = this.modelData.build();
+
+            component.setFlags(data.flags());
+            component.setFloats(data.floats());
+            component.setColors(data.colors());
+            component.setStrings(data.strings());
+
+            meta.setCustomModelDataComponent(component);
+        }
 
         if (glow != null) meta.setEnchantmentGlintOverride(glow);
 

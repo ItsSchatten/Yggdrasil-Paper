@@ -81,6 +81,8 @@ public final class ItemCreator {
      *
      * @param stack The {@link ItemStack} to build the builder with.
      * @return Returns an {@link ItemCreatorBuilder} instance.
+     * @apiNote This does not take into account the amount from the ItemStack.
+     * You should still supply the amount if you want to have more than one.
      */
     public static ItemCreatorBuilder of(final @NotNull ItemStack stack) {
         final ItemMeta meta = stack.getItemMeta();
@@ -97,6 +99,9 @@ public final class ItemCreator {
     public @NotNull ItemStack make() {
         final ItemStack stack = new ItemStack(material, amount);
         ItemMeta meta = this.meta != null ? this.meta : stack.getItemMeta();
+        // To update the item properly using the manipulators, we must pass the "copied" meta if it is provided.
+        // Failing to do so will allow the item to become "out of sync" with what we would expect.
+        if (this.meta != null) stack.setItemMeta(meta);
 
         if (meta != null) {
             for (final Manipulator<?> manipulator : this.manipulators) {

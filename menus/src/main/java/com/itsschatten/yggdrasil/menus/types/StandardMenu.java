@@ -136,16 +136,16 @@ public abstract class StandardMenu extends Menu {
      */
     protected final void registerPreMadeButtons() {
         if (addInfo() && getInfoButton() != null) {
-            registerButtons(getInfoButton());
+            registerButtons(getInfoButton().build());
         }
 
         if (addClose() && getCloseButton() != null) {
-            registerButtons(getCloseButton());
+            registerButtons(getCloseButton().build());
         }
 
         if (addReturn() && getReturnButton() != null) {
             Objects.requireNonNull(parent, "Parent cannot be 'null' if the menu wants to add a return button!");
-            registerButtons(getReturnButton());
+            registerButtons(getReturnButton().build());
         }
 
     }
@@ -155,32 +155,30 @@ public abstract class StandardMenu extends Menu {
     /**
      * The {@link CloseButton}.
      *
-     * @return Returns the {@link CloseButton}.
+     * @return Returns a {@link CloseButton} builder class.
      * @see CloseButton#builder()
      */
     @Nullable
-    public CloseButton getCloseButton() {
+    public CloseButton.CloseButtonBuilder getCloseButton() {
         return CloseButton.builder()
                 .material(Material.BARRIER)
                 .name("<red>Close")
-                .position(InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 1))
-                .build();
+                .position(InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 1));
     }
 
     /**
      * The {@link ReturnButton}.
      *
-     * @return Returns the {@link ReturnButton}.
+     * @return Returns a {@link ReturnButton} builder class.
      * @see ReturnButton#builder()
      */
     @Nullable
-    public ReturnButton getReturnButton() {
+    public ReturnButton.ReturnButtonBuilder getReturnButton() {
         return ReturnButton.builder()
                 .menuToReturn(parent)
                 .material(Material.ARROW)
                 .name("<yellow>< Return to " + (parent != null ? parent.getInventory().getTitle() : ""))
-                .position(InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 2))
-                .build();
+                .position(InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 2));
     }
 
     /**
@@ -190,13 +188,12 @@ public abstract class StandardMenu extends Menu {
      * @see InfoButton#builder()
      */
     @Nullable
-    public InfoButton getInfoButton() {
+    public InfoButton.InfoButtonBuilder getInfoButton() {
         return InfoButton.builder()
                 .material(Material.NETHER_STAR)
                 .name("<yellow>Information")
                 .lore(getInfo())
-                .position(InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 9))
-                .build();
+                .position(InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 9));
     }
 
     /**

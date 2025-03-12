@@ -17,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-@Builder(toBuilder = true)
+@Builder
 public final class NavigationButton extends Button {
 
     /**
