@@ -22,14 +22,14 @@ public class CommandRequirements {
      *
      * @since 2.1.1
      */
-    public static Predicate<CommandSourceStack> PLAYER = (source) -> source instanceof Player;
+    public static Predicate<CommandSourceStack> PLAYER = (source) -> source.getSender() instanceof Player;
 
     /**
      * Quickly checks if {@link CommandSourceStack} is an instanceof {@link ConsoleCommandSender}.
      *
      * @since 2.1.1
      */
-    public static Predicate<CommandSourceStack> CONSOLE = (source) -> source instanceof ConsoleCommandSender;
+    public static Predicate<CommandSourceStack> CONSOLE = (source) -> source.getSender() instanceof ConsoleCommandSender;
 
     /**
      * Utility method to quickly check if a {@link CommandSourceStack} has a permission.

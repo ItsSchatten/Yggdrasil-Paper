@@ -167,7 +167,7 @@ public final class AlternateResolver implements Modifying, Examinable {
     /**
      * Advances the color index forward.
      */
-    protected void advanceColor() {
+    private void advanceColor() {
         this.index++;
     }
 
@@ -175,7 +175,7 @@ public final class AlternateResolver implements Modifying, Examinable {
      * @return The size; from code point count.
      * @see String#codePointCount(int, int)
      */
-    protected final int size() {
+    private int size() {
         return this.size;
     }
 
@@ -186,7 +186,7 @@ public final class AlternateResolver implements Modifying, Examinable {
      * @param depth   depth in the tree this node is at
      */
     @Override
-    public final void visit(final @NotNull Node current, final int depth) {
+    public void visit(final @NotNull Node current, final int depth) {
         if (this.visited) {
             throw new IllegalStateException("Color changing tag instances cannot be re-used, return a new one for each resolve");
         }
@@ -207,7 +207,7 @@ public final class AlternateResolver implements Modifying, Examinable {
      * {@inheritDoc}
      */
     @Override
-    public final void postVisit() {
+    public void postVisit() {
         // init
         this.visited = true;
         this.init();
@@ -267,7 +267,7 @@ public final class AlternateResolver implements Modifying, Examinable {
     /**
      * @return Returns the next color based on the position.
      */
-    protected TextColor color() {
+    private TextColor color() {
         // from [0, this.colors.length - 1], select the position in the alternation
         // we will wrap around to preserve an even cycle as would be seen with non-zero phases
         final double position = this.index;

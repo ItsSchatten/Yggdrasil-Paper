@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 /**
  * @since 1.0.0
  */
-public class InventoryListener implements Listener {
+public final class InventoryListener implements Listener {
 
     private boolean handlerRunning = false;
 

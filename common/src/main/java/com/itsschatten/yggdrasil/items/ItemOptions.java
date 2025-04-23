@@ -1,7 +1,9 @@
 package com.itsschatten.yggdrasil.items;
 
+import io.papermc.paper.datacomponent.DataComponentType;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.CustomModelData;
+import io.papermc.paper.datacomponent.item.TooltipDisplay;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -9,7 +11,6 @@ import net.kyori.adventure.key.Key;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
 import org.bukkit.damage.DamageType;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemRarity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -33,6 +34,99 @@ import java.util.stream.Collectors;
 @EqualsAndHashCode
 public final class ItemOptions {
 
+    // Most of these components are likely unnecessary and don't do anything on items.
+    private final static Set<DataComponentType> ALL_COMPONENTS = new HashSet<>(Arrays.asList(
+            //<editor-fold desc="All Components." defaultstate="collapsed">
+            DataComponentTypes.MAX_STACK_SIZE,
+            DataComponentTypes.MAX_DAMAGE,
+            DataComponentTypes.DAMAGE,
+            DataComponentTypes.UNBREAKABLE,
+            DataComponentTypes.CUSTOM_NAME,
+            DataComponentTypes.ITEM_NAME,
+            DataComponentTypes.ITEM_MODEL,
+            DataComponentTypes.LORE,
+            DataComponentTypes.RARITY,
+            DataComponentTypes.ENCHANTMENTS,
+            DataComponentTypes.CAN_PLACE_ON,
+            DataComponentTypes.CAN_BREAK,
+            DataComponentTypes.ATTRIBUTE_MODIFIERS,
+            DataComponentTypes.CUSTOM_MODEL_DATA,
+            DataComponentTypes.TOOLTIP_DISPLAY,
+            DataComponentTypes.REPAIR_COST,
+            DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE,
+            DataComponentTypes.INTANGIBLE_PROJECTILE,
+            DataComponentTypes.FOOD,
+            DataComponentTypes.CONSUMABLE,
+            DataComponentTypes.USE_REMAINDER,
+            DataComponentTypes.USE_COOLDOWN,
+            DataComponentTypes.DAMAGE_RESISTANT,
+            DataComponentTypes.TOOL,
+            DataComponentTypes.WEAPON,
+            DataComponentTypes.ENCHANTABLE,
+            DataComponentTypes.EQUIPPABLE,
+            DataComponentTypes.REPAIRABLE,
+            DataComponentTypes.GLIDER,
+            DataComponentTypes.TOOLTIP_STYLE,
+            DataComponentTypes.DEATH_PROTECTION,
+            DataComponentTypes.BLOCKS_ATTACKS,
+            DataComponentTypes.STORED_ENCHANTMENTS,
+            DataComponentTypes.DYED_COLOR,
+            DataComponentTypes.MAP_COLOR,
+            DataComponentTypes.MAP_ID,
+            DataComponentTypes.MAP_DECORATIONS,
+            DataComponentTypes.MAP_POST_PROCESSING,
+            DataComponentTypes.CHARGED_PROJECTILES,
+            DataComponentTypes.BUNDLE_CONTENTS,
+            DataComponentTypes.POTION_CONTENTS,
+            DataComponentTypes.POTION_DURATION_SCALE,
+            DataComponentTypes.SUSPICIOUS_STEW_EFFECTS,
+            DataComponentTypes.WRITABLE_BOOK_CONTENT,
+            DataComponentTypes.WRITTEN_BOOK_CONTENT,
+            DataComponentTypes.TRIM,
+            DataComponentTypes.INSTRUMENT,
+            DataComponentTypes.PROVIDES_TRIM_MATERIAL,
+            DataComponentTypes.OMINOUS_BOTTLE_AMPLIFIER,
+            DataComponentTypes.JUKEBOX_PLAYABLE,
+            DataComponentTypes.PROVIDES_BANNER_PATTERNS,
+            DataComponentTypes.RECIPES,
+            DataComponentTypes.LODESTONE_TRACKER,
+            DataComponentTypes.FIREWORK_EXPLOSION,
+            DataComponentTypes.FIREWORKS,
+            DataComponentTypes.PROFILE,
+            DataComponentTypes.NOTE_BLOCK_SOUND,
+            DataComponentTypes.BANNER_PATTERNS,
+            DataComponentTypes.BASE_COLOR,
+            DataComponentTypes.POT_DECORATIONS,
+            DataComponentTypes.CONTAINER,
+            DataComponentTypes.CONTAINER_LOOT,
+            DataComponentTypes.BREAK_SOUND,
+            DataComponentTypes.VILLAGER_VARIANT,
+            DataComponentTypes.WOLF_VARIANT,
+            DataComponentTypes.WOLF_SOUND_VARIANT,
+            DataComponentTypes.WOLF_COLLAR,
+            DataComponentTypes.FOX_VARIANT,
+            DataComponentTypes.SALMON_SIZE,
+            DataComponentTypes.PARROT_VARIANT,
+            DataComponentTypes.TROPICAL_FISH_PATTERN,
+            DataComponentTypes.TROPICAL_FISH_BASE_COLOR,
+            DataComponentTypes.TROPICAL_FISH_PATTERN_COLOR,
+            DataComponentTypes.MOOSHROOM_VARIANT,
+            DataComponentTypes.RABBIT_VARIANT,
+            DataComponentTypes.PIG_VARIANT,
+            DataComponentTypes.COW_VARIANT,
+            DataComponentTypes.CHICKEN_VARIANT,
+            DataComponentTypes.FROG_VARIANT,
+            DataComponentTypes.HORSE_VARIANT,
+            DataComponentTypes.PAINTING_VARIANT,
+            DataComponentTypes.LLAMA_VARIANT,
+            DataComponentTypes.AXOLOTL_VARIANT,
+            DataComponentTypes.CAT_VARIANT,
+            DataComponentTypes.CAT_COLLAR,
+            DataComponentTypes.SHEEP_COLOR,
+            DataComponentTypes.SHULKER_COLOR
+            //</editor-fold>
+    ));
+
     /**
      * Empty options.
      */
@@ -51,17 +145,22 @@ public final class ItemOptions {
     /**
      * Preset options for hiding all flags on the item.
      *
-     * @implNote Due to the way Paper handles ItemFlags, flags that may not be appropriate for the item may remain unset.
-     * I.E., if the item doesn't contain any enchantments but the flag for hiding enchantments is supplied, that flag will not be set on the item.
+     * @implNote Due to the large number of components in the "{@link #ALL_COMPONENTS}"
+     * list you should not use this variable and instead opt for explicit definition of
+     * components that should be hidden.
+     * @deprecated Deprecated in favor of using per-component hiding due to a large number of components in the list.
      */
-    public static ItemOptions HIDE_ALL_FLAGS = ItemOptions.builder().itemFlags(Arrays.stream(ItemFlag.values()).collect(Collectors.toSet())).build();
+    @ApiStatus.ScheduledForRemoval(inVersion = "2.1.3")
+    @Deprecated(since = "2.1.2", forRemoval = true)
+    public static ItemOptions HIDE_ALL_FLAGS = ItemOptions.builder().hiddenComponents(ALL_COMPONENTS).build();
 
     /**
      * Flags to hide options on an item.
      *
-     * @see ItemFlag
+     * @see DataComponentType
+     * @see DataComponentTypes
      */
-    private Set<ItemFlag> itemFlags;
+    private Set<DataComponentType> hiddenComponents;
 
     // It is recommended to check the ItemMeta methods to determine if a variable should be a primitive or a value-based class.
 
@@ -102,7 +201,7 @@ public final class ItemOptions {
      */
     private CustomModelData.Builder modelData;
 
-    // TODO: Other components.
+    // TODO: Other common components.
     // This needs a list.
 
     /**
@@ -135,7 +234,7 @@ public final class ItemOptions {
                 .hideToolTip(meta.isHideTooltip())
                 .unbreakable(meta.isUnbreakable())
                 .resistantTo(meta.getDamageResistant())
-                .itemFlags(meta.getItemFlags())
+                .hiddenComponents(stack.getData(DataComponentTypes.TOOLTIP_DISPLAY).hiddenComponents())
                 .equipable((equip) -> meta.getEquippable())
                 .build();
     }
@@ -143,11 +242,13 @@ public final class ItemOptions {
     /**
      * Applies these options to the provided {@link ItemMeta}.
      *
-     * @param meta The {@link ItemMeta} to apply these options to.
+     * @param itemStack The {@link ItemMeta} to apply these options to.
      * @see ItemCreator#make()
      */
     @ApiStatus.Internal
-    public void apply(final ItemMeta meta) {
+    public void apply(final ItemStack itemStack) {
+        if (itemStack == null) return;
+        ItemMeta meta = itemStack.getItemMeta();
         if (meta == null) return;
 
         meta.setHideTooltip(hideToolTip);
@@ -172,10 +273,12 @@ public final class ItemOptions {
 
         if (rarity != null) meta.setRarity(rarity);
 
-        if (itemFlags != null && !itemFlags.isEmpty()) {
-            meta.addItemFlags(itemFlags.toArray(new ItemFlag[0]));
+        itemStack.setItemMeta(meta);
+        if (hiddenComponents != null && !hiddenComponents.isEmpty()) {
+            itemStack.setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hiddenComponents(hiddenComponents).build());
         }
     }
+
 
     /**
      * The builder for an {@link ItemOptions}.
@@ -197,21 +300,29 @@ public final class ItemOptions {
             return this;
         }
 
-
-        public ItemOptionsBuilder itemFlags(Set<ItemFlag> itemFlags) {
-            this.itemFlags = itemFlags;
+        public ItemOptionsBuilder hiddenComponents(Set<DataComponentType> dataComponents) {
+            this.hiddenComponents = dataComponents;
             return this;
         }
 
-        public ItemOptionsBuilder itemFlags(Collection<ItemFlag> itemFlags) {
-            this.itemFlags = new HashSet<>(itemFlags);
+        public ItemOptionsBuilder hiddenComponents(Collection<DataComponentType> dataComponents) {
+            this.hiddenComponents = new HashSet<>(dataComponents);
             return this;
         }
 
-        public ItemOptionsBuilder itemFlags(ItemFlag... itemFlags) {
-            this.itemFlags = Arrays.stream(itemFlags).collect(Collectors.toSet());
+        public ItemOptionsBuilder hiddenComponents(DataComponentType... dataComponents) {
+            this.hiddenComponents = Arrays.stream(dataComponents).collect(Collectors.toSet());
             return this;
         }
+
+        public ItemOptionsBuilder hiddenComponent(DataComponentType dataComponent) {
+            if (this.hiddenComponents == null) {
+                this.hiddenComponents = new HashSet<>();
+            }
+            this.hiddenComponents.add(dataComponent);
+            return this;
+        }
+
     }
 
 }

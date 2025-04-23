@@ -3,16 +3,16 @@
 jetbrains-annotations-ver = "24.1.0"
 lombok-ver = "1.18.34"
 
-papermc-ver = "1.21.4-R0.1-SNAPSHOT"
+papermc-ver = "1.21.5-R0.1-SNAPSHOT"
 velocity-ver = "3.4.0-SNAPSHOT"
 
 configurate-ver = "4.1.2"
 
 lang-ver = "3.17.0"
 
-paperweight-ver = "2.0.0-beta.14"
-lombok-plugin-ver = "8.6"
-shadow-ver = "8.3.0"
+paperweight-ver = "2.0.0-beta.16"
+lombok-plugin-ver = "8.13.1"
+shadow-ver = "9.0.0-beta11"
 
 # The libraries in use.
 [libraries]

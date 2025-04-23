@@ -50,7 +50,7 @@ public final class GenericEnumArgument<E extends Enum<E>> implements CustomArgum
     // Lists all values from the provided enum for tab completion.
     @Override
     public @NotNull <S> CompletableFuture<Suggestions> listSuggestions(@NotNull CommandContext<S> context, @NotNull SuggestionsBuilder builder) {
-        EnumSet.allOf(enumClass).stream().map(op -> op.name().toLowerCase()).forEach(builder::suggest);
+        EnumSet.allOf(enumClass).stream().map(op -> op.name().toLowerCase()).filter(op -> op.contains(builder.getRemainingLowerCase())).forEach(builder::suggest);
         return builder.buildFuture();
     }
 

@@ -18,6 +18,8 @@ import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.Currency;
 import java.util.Locale;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Utility class for {@link String}s.
@@ -113,6 +115,35 @@ public class StringUtil {
      */
     public static void addResolvers(final @NotNull Collection<TagResolver> resolver) {
         MINI_MESSAGE.editTags(builder -> builder.resolvers(resolver));
+    }
+
+    /**
+     * Convert a {@link Collection} of objects into a nicely formatted list that also inserts 'and' for the final entry.
+     *
+     * @param collection The collection to map.
+     * @param mapper     How to map the collection.
+     * @param <T>        The generic type.
+     * @return Return {@link #toFormattedList(Collection, Function, String)}
+     */
+    public static <T> @NotNull String toFormattedList(final Collection<T> collection, final Function<T, ? extends String> mapper) {
+        return toFormattedList(collection, mapper, "<gray>, </gray>");
+    }
+
+    /**
+     * Convert a {@link Collection} of objects into a nicely formatted list that also inserts 'and' for the final entry.
+     *
+     * @param collection The collection to map.
+     * @param mapper     How to map the collection.
+     * @param separator  The separator between the values.
+     * @param <T> The generic type.
+     * @return Returns a properly formatted list of objects, that also inserts 'and' for the final entry.
+     */
+    public static <T> @NotNull String toFormattedList(final @NotNull Collection<T> collection, final Function<T, ? extends String> mapper, final String separator) {
+        final StringBuilder builder = new StringBuilder(collection.stream().map(mapper).collect(Collectors.joining(separator)));
+        if (builder.toString().contains(separator)) {
+            builder.replace(builder.lastIndexOf(separator), builder.lastIndexOf(separator) + 1, "and");
+        }
+        return builder.toString();
     }
 
     /**

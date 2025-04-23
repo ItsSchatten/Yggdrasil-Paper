@@ -27,7 +27,7 @@ public abstract class Wand {
      *
      * @return The permission string.
      */
-    public abstract String getPermission();
+    public abstract String permission();
 
     /**
      * Called when our wand sets both points.
@@ -36,7 +36,7 @@ public abstract class Wand {
      * @param secondLocation The second {@link Location} set.
      * @param player         The {@link Player} that set the locations.
      */
-    public abstract void onSelectionComplete(final Location firstLocation, final Location secondLocation, final Player player);
+    public abstract void onComplete(final Location firstLocation, final Location secondLocation, final Player player);
 
     /**
      * Called when a point is selected.
@@ -45,7 +45,7 @@ public abstract class Wand {
      * @param player    The {@link Player} that set the location.
      * @param secondPos If this selection is the second position. (set internally)
      */
-    public abstract void onSelection(final Location location, final Player player, final boolean secondPos);
+    public abstract void onSelect(final Location location, final Player player, final boolean secondPos);
 
     /**
      * The wand's {@link ItemStack}.

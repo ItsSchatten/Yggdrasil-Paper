@@ -1,6 +1,5 @@
 package com.itsschatten.yggdrasil.wands;
 
-import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,31 +21,13 @@ public class WandListeners implements Listener {
 
     /**
      * A map to store the first point locations.
-     * -- GETTER --
-     * Gets the first location map that belongs to this listener.
-     *
-     * @return Returns the {@link #firstLocationMap}
      */
-    @Getter
-    public static Map<UUID, Location> firstLocationMap;
+    public final static Map<UUID, Location> FIRST_LOCATION = new HashMap<>();
 
     /**
      * A map to store the second point locations.
-     * -- GETTER --
-     * Gets the second location map that belongs to this listener.
-     *
-     * @return Returns the {@link #secondLocationMap}
      */
-    @Getter
-    public static Map<UUID, Location> secondLocationMap;
-
-    /**
-     * Initializes the maps.
-     */
-    public WandListeners() {
-        firstLocationMap = new HashMap<>();
-        secondLocationMap = new HashMap<>();
-    }
+    public final static Map<UUID, Location> SECOND_LOCATION = new HashMap<>();
 
     /**
      * Runs our wand logic.
@@ -61,22 +42,22 @@ public class WandListeners implements Listener {
 
         WandUtils.getWands().forEach((wand) -> {
             if (event.getItem() == null) return; // If the item is null, ignore.
-            if (wand.getPermission().isBlank() || player.hasPermission(wand.getPermission())) {
+            if (wand.permission().isBlank() || player.hasPermission(wand.permission())) {
                 if (event.getItem().equals(wand.getItemStack())) { // If the item used is exactly the wand's item stack.
                     event.setCancelled(true); // Cancel the event (no breaking blocks / no tilling soil)
 
                     if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
-                        firstLocationMap.put(player.getUniqueId(), event.getClickedBlock().getLocation()); // Set the first location.
-                        wand.onSelection(event.getClickedBlock().getLocation(), player, false); // Call the onSelection method from the wand.
+                        FIRST_LOCATION.put(player.getUniqueId(), event.getClickedBlock().getLocation()); // Set the first location.
+                        wand.onSelect(event.getClickedBlock().getLocation(), player, false); // Call the onSelection method from the wand.
                     }
 
                     if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                        secondLocationMap.put(player.getUniqueId(), event.getClickedBlock().getLocation()); // Set the second location.
-                        wand.onSelection(event.getClickedBlock().getLocation(), player, true); // Call the onSelection method from the wand.
+                        SECOND_LOCATION.put(player.getUniqueId(), event.getClickedBlock().getLocation()); // Set the second location.
+                        wand.onSelect(event.getClickedBlock().getLocation(), player, true); // Call the onSelection method from the wand.
                     }
 
-                    if (firstLocationMap.containsKey(player.getUniqueId()) && secondLocationMap.containsKey(player.getUniqueId())) { // If both locations are set.
-                        wand.onSelectionComplete(firstLocationMap.get(player.getUniqueId()), secondLocationMap.get(player.getUniqueId()), player); // Call our complete method.
+                    if (FIRST_LOCATION.containsKey(player.getUniqueId()) && SECOND_LOCATION.containsKey(player.getUniqueId())) { // If both locations are set.
+                        wand.onComplete(FIRST_LOCATION.get(player.getUniqueId()), SECOND_LOCATION.get(player.getUniqueId()), player); // Call our complete method.
                         if (wand.getType() == WandType.SINGLE_SELECTION) {
                             WandUtils.clearSelection(player.getUniqueId());
                         }
@@ -93,8 +74,8 @@ public class WandListeners implements Listener {
      */
     @EventHandler
     public void onPlayerQuit(final @NotNull PlayerQuitEvent event) {
-        firstLocationMap.remove(event.getPlayer().getUniqueId()); // Remove the player from the first point map.
-        secondLocationMap.remove(event.getPlayer().getUniqueId()); // Remove the player from the second point map.
+        FIRST_LOCATION.remove(event.getPlayer().getUniqueId()); // Remove the player from the first point map.
+        SECOND_LOCATION.remove(event.getPlayer().getUniqueId()); // Remove the player from the second point map.
     }
 
 }

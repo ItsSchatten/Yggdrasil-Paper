@@ -19,7 +19,9 @@ public interface ISkin {
      */
     @Nullable
     @Pattern("^[!-~]{0,16}$")
-    String getName();
+    default String getName() {
+        return "";
+    }
 
     /**
      * Get the URL for the texture, must be a 'textures.minecraft.net'.
@@ -46,11 +48,9 @@ public interface ISkin {
      * The {@link UUID} for this skin.
      * Should you want skulls to stack, ensure you set a consistent UUID for that skull.
      *
-     * @return Be default a random UUID generated via {@link UUID#randomUUID()}.
+     * @return A UUID instance.
      */
     @NotNull
-    default UUID getUUID() {
-        return UUID.randomUUID();
-    }
+    UUID getUUID();
 
 }

@@ -137,6 +137,9 @@ public abstract class Menu extends AbstractMenuInventory {
         for (final Button button : buttons) {
             if (!registerButton(button)) {
                 Utils.logWarning("Failed to register a button: " + button);
+                if (Utils.isDebug()) {
+                    Thread.dumpStack();
+                }
             }
         }
     }

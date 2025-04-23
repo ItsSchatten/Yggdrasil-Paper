@@ -156,7 +156,7 @@ public class Cuboid {
         Location second;
 
         for (int i = yMax + 1; i > yMin; i--) {
-            Block toCheck = world.getBlockAt(xMin, i, zMin);
+            final Block toCheck = world.getBlockAt(xMin, i, zMin);
             if (!toCheck.isEmpty() || toCheck.getType() != Material.AIR) {
                 second = toCheck.getLocation();
                 return second;

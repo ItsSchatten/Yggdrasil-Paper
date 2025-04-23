@@ -2,7 +2,6 @@ package com.itsschatten.yggdrasil.menus.types;
 
 import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.items.ItemCreator;
-import com.itsschatten.yggdrasil.items.ItemOptions;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.AnimatedButton;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
@@ -199,19 +198,20 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * Refreshes the currently viewed page.
      */
     public final void refreshPage() {
+        clearPage();
+
         // We MUST clear the registered buttons first before registering new ones.
         // Failing to do so may cause double execution of a method which we don't want, especially if it references the
         // same data or the data is no longer present.
         this.registeredPageButtons.clear();
 
-        clearPage();
-        drawPage();
+        initializePage();
         updateTitleAndButtons();
         drawListOfButtons(registeredPageButtons);
     }
 
     /**
-     * Updates the list of for this menu.
+     * Updates the list of for this menu and clears the menu page.
      *
      * @param list The list that should be set as this Menu's.
      */
@@ -220,6 +220,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
 
         // We clear the registered normal buttons, so when we refresh, the buttons may be re-registered if required.
         clearButtons();
+        clearPage();
         refresh();
         drawListOfButtons(registeredPageButtons);
     }
@@ -231,7 +232,6 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      */
     public final void cleanUpdatePages(final Collection<T> list) {
         onlyUpdatePages(list);
-
         refreshPage();
     }
 
@@ -243,17 +243,23 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
         if (center) {
             // Clear the middle slots.
             for (int i = 0; i < usable; i++) {
-                forceSet(InventoryPosition.MIDDLE_POSITIONS.get(i), new ItemStack(Material.AIR));
+                if (isSlotTakenByPageButton(InventoryPosition.MIDDLE_POSITIONS.get(i))) {
+                    forceSet(InventoryPosition.MIDDLE_POSITIONS.get(i), new ItemStack(Material.AIR));
+                }
             }
         } else {
             // Replace all placeable positions with air.
             if (getPlaceablePositions() != null && !getPlaceablePositions().isEmpty()) {
                 for (int i = 0; i < usable; i++) {
-                    forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
+                    if (isSlotTakenByPageButton(getPlaceablePositions().get(i))) {
+                        forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
+                    }
                 }
             } else {
                 for (int i = 0; i < usable; i++) {
-                    forceSet(InventoryPosition.fromSlot(i), new ItemStack(Material.AIR));
+                    if (isSlotTakenByPageButton(InventoryPosition.fromSlot(i))) {
+                        forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
+                    }
                 }
             }
         }
@@ -268,14 +274,14 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
         drawExtra();
         updateTitleAndButtons();
 
-        drawPage();
+        initializePage();
         drawListOfButtons(registeredPageButtons);
     }
 
     /**
      * Draws a page.
      */
-    private void drawPage() {
+    private void initializePage() {
         // Define our usable so we can place them in the correct slots.
         final int usable = getUsableFromSize(getSize());
 
@@ -367,7 +373,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
 
         final MenuInventory inv = super.formInventory();
 
-        drawPage();
+        initializePage();
         updateTitleAndButtons();
         drawListOfButtons(registeredPageButtons);
         return inv;
@@ -570,7 +576,6 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
         return NavigationButton.builder()
                 .material(Material.ARROW)
                 .name("<yellow>Next >")
-                .options(ItemOptions.HIDE_ALL_FLAGS.toBuilder().build())
                 .runnable((user, menu, type) -> {
                     final boolean canGo = page < pages.size();
                     if (canGo) {
@@ -595,7 +600,6 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
         return NavigationButton.builder()
                 .material(Material.ARROW)
                 .name("<yellow>< Previous")
-                .options(ItemOptions.HIDE_ALL_FLAGS.toBuilder().build())
                 .runnable((user, menu, type) -> {
                     final boolean canGo = page > 1;
                     if (canGo) {
@@ -677,7 +681,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
     @Unmodifiable
     public final List<T> getValues() {
         if (this.page == 0 || this.pages == null || this.pages.isEmpty()) return Collections.emptyList();
-        org.apache.commons.lang3.Validate.isTrue(this.pages.containsKey(this.page - 1), "Menu " + this + " does not contain page #" + (this.page - 1));
+        org.apache.commons.lang3.Validate.isTrue(this.pages.containsKey(this.page - 1), "Menu " + this.getClass().getSimpleName() + " does not contain page #" + (this.page - 1));
 
         return Collections.unmodifiableList(this.pages.get(this.page - 1));
     }

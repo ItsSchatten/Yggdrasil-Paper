@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.apache.commons.lang3.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -19,6 +18,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.MenuType;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.view.AnvilView;
 import org.bukkit.plugin.Plugin;
@@ -32,7 +32,6 @@ import java.util.function.Consumer;
 
 /**
  * This class and much of the AnvilGUI API has been modeled after <a href="https://github.com/WesJD/AnvilGUI/tree/master">AnvilGUI</a>.
- * <br/>
  *
  * @since 1.0.0
  */
@@ -40,7 +39,7 @@ import java.util.function.Consumer;
 @Accessors(fluent = true)
 @EqualsAndHashCode
 @ToString
-public class AnvilGUI {
+public final class AnvilGUI {
 
     /**
      * The AnvilGUI's that are open.
@@ -120,7 +119,7 @@ public class AnvilGUI {
     /**
      * The title of the inventory.
      */
-    private Component title;
+    private final Component title;
 
     // Instance variables.
     /**
@@ -183,19 +182,16 @@ public class AnvilGUI {
         Bukkit.getPluginManager().registerEvents(this.listener, this.plugin);
 
         if (this.player != null) {
-            this.view = (AnvilView) this.player.openAnvil(null, true);
-            if (title != null)
-                view.setTitle(LegacyComponentSerializer.legacySection().serialize(this.title));
+            this.view = MenuType.ANVIL.create(this.player, title);
+            this.player.openInventory(view);
             this.inventory = view.getTopInventory();
         } else if (this.holder != null) {
-            this.view = (AnvilView) this.holder.getBase().openAnvil(null, true);
-            if (title != null)
-                view.setTitle(LegacyComponentSerializer.legacySection().serialize(this.title));
+            this.view = MenuType.ANVIL.create(this.holder.getBase(), title);
+            this.holder.getBase().openInventory(view);
             this.inventory = view.getTopInventory();
         } else {
             throw new UnsupportedOperationException("Both player and holder are null! The menu cannot be opened.");
         }
-
 
         for (int i = 0; i < initialItems.length; i++) {
             inventory.setItem(i, initialItems[i]);

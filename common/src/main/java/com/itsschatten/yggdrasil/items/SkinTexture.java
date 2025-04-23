@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import org.bukkit.profile.PlayerTextures;
 import org.intellij.lang.annotations.Pattern;
+import org.intellij.lang.annotations.Subst;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,7 +23,7 @@ import java.util.UUID;
  * @param name    The name to use in the generated {@link com.destroystokyo.paper.profile.PlayerProfile}.
  * @param model   The model to use for this skin.
  */
-public record SkinTexture(@NotNull UUID uuid, @NotNull String texture, @Nullable @Pattern("^[!-~]{0,16}$") String name,
+public record SkinTexture(@NotNull UUID uuid, @NotNull String texture, @Subst("") @Nullable @Pattern("^[!-~]{0,16}$") String name,
                           @NotNull PlayerTextures.SkinModel model) {
 
     /**
@@ -32,7 +33,7 @@ public record SkinTexture(@NotNull UUID uuid, @NotNull String texture, @Nullable
      * @param texture The texture {@link String} for this skin.
      * @param name    The name to use in the generated {@link com.destroystokyo.paper.profile.PlayerProfile}.
      */
-    public SkinTexture(@NotNull UUID uuid, @Nullable String name, @NotNull String texture) {
+    public SkinTexture(@NotNull UUID uuid, @Subst("") @Nullable String name, @NotNull String texture) {
         this(uuid, texture, name, PlayerTextures.SkinModel.CLASSIC);
     }
 

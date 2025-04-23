@@ -40,7 +40,7 @@ public final class NavigationButton extends Button {
      * The {@link ItemOptions} for the button.
      */
     @Builder.Default
-    private ItemOptions options = ItemOptions.HIDE_ALL_FLAGS;
+    private ItemOptions options = ItemOptions.EMPTY;
 
     /**
      * The {@link MetaManipulator}s for the item.

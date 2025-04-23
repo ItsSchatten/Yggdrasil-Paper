@@ -16,21 +16,20 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.translation.GlobalTranslator;
 import org.bukkit.NamespacedKey;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.io.BukkitObjectInputStream;
-import org.bukkit.util.io.BukkitObjectOutputStream;
 import org.intellij.lang.annotations.Pattern;
 import org.intellij.lang.annotations.Subst;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,12 +45,12 @@ public final class Utils {
     private final static PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
     private final static MiniMessage MINI_MESSAGE = StringUtil.builtMiniMessage();
 
+    private static ComponentLogger logger;
     /**
      * The instance of the plugin this class belongs too.
      */
     @Getter
     private static JavaPlugin instance;
-
     /**
      * Are we in debug?
      */
@@ -240,35 +239,13 @@ public final class Utils {
 
     /**
      * Converts an array of {@link ItemStack}s into a Base64 encoded {@link String}.
-     * <br/>
-     * Credits to <a href="https://gist.github.com/graywolf336/8153678">this gist</a> for this method.
      *
-     * @param items The array of items that is to be converted.
-     * @return Returns the encoded {@link ItemStack} array.
+     * @param items The items that are to be converted.
+     * @return Returns the encoded {@link ItemStack}.
      * @throws IllegalStateException If unable to save the ItemStack, this is thrown.
-     * @deprecated Deprecated in favor of {@link ItemStack#serializeAsBytes()} or {@link ItemStack#serializeItemsAsBytes(Collection)}
      */
-    @Deprecated(forRemoval = true, since = "2.1.1")
-    @ApiStatus.ScheduledForRemoval(inVersion = "2.2.0")
-    public static @NotNull String convertItemStackToBase64(ItemStack[] items) throws IllegalStateException {
-        try {
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            final BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
-
-            // Write the size of the inventory
-            dataOutput.writeInt(items.length);
-
-            // Save every element in the list
-            for (final ItemStack item : items) {
-                dataOutput.writeObject(item);
-            }
-
-            // Serialize that array
-            dataOutput.close();
-            return Base64Coder.encodeLines(outputStream.toByteArray());
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to save item stacks.", e);
-        }
+    public static @NotNull String convertItemStacksToBase64(@NotNull ItemStack[] items) throws IllegalStateException {
+        return Base64Coder.encodeLines(ItemStack.serializeItemsAsBytes(items));
     }
 
     /**
@@ -276,30 +253,35 @@ public final class Utils {
      * Gets an array of ItemStacks from Base64 string.
      *
      * @param data Base64 string to convert to {@link ItemStack} array.
-     * @return {@link ItemStack} array created from the Base64 string, may be empty.
-     * @throws IOException Thrown if unable to decode a class type.
-     * @deprecated Deprecated in favor of {@link ItemStack#deserializeBytes(byte[])} or {@link ItemStack#deserializeItemsFromBytes(byte[])}
+     * @return {@link ItemStack}s created from the Base64 string, may be null.
      */
-    @Contract("null -> new")
-    @Deprecated(forRemoval = true, since = "2.1.1")
-    @ApiStatus.ScheduledForRemoval(inVersion = "2.2.0")
-    public static ItemStack @NotNull [] getItemStackFromBase64(String data) throws IOException {
-        if (data == null) return new ItemStack[0];
-        try {
-            final ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64Coder.decodeLines(data));
-            final BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
-            final ItemStack[] items = new ItemStack[dataInput.readInt()];
+    @Contract("null -> null; !null -> !null")
+    public static ItemStack[] getItemStacksFromBase64(String data) {
+        if (data == null) return null;
+        return ItemStack.deserializeItemsFromBytes(Base64Coder.decodeLines(data));
+    }
 
-            // Read the serialized inventory
-            for (int i = 0; i < items.length; i++) {
-                items[i] = (ItemStack) dataInput.readObject();
-            }
+    /**
+     * Converts an {@link ItemStack} into a Base64 encoded {@link String}.
+     *
+     * @param item The item that is to be converted.
+     * @return Returns the encoded {@link ItemStack}.
+     * @throws IllegalStateException If unable to save the ItemStack, this is thrown.
+     */
+    public static @NotNull String convertItemStackToBase64(@NotNull ItemStack item) throws IllegalStateException {
+        return Base64Coder.encodeLines(item.serializeAsBytes());
+    }
 
-            dataInput.close();
-            return items;
-        } catch (ClassNotFoundException e) {
-            throw new IOException("Unable to decode class type.", e);
-        }
+    /**
+     * Converts a Base64 encoded {@link String} into an {@link ItemStack}.
+     *
+     * @param data Base64 string to convert to an {@link ItemStack}.
+     * @return {@link ItemStack} created from the Base64 string, may be null.
+     */
+    @Contract("null -> null; !null -> !null")
+    public static ItemStack getItemStackFromBase64(String data) {
+        if (data == null) return null;
+        return ItemStack.deserializeBytes(Base64Coder.decodeLines(data));
     }
 
     /**
@@ -321,10 +303,27 @@ public final class Utils {
      * @throws UnsupportedOperationException Thrown if the plugin instance is null.
      */
     public static @NotNull ComponentLogger getLogger() {
-        if (Utils.instance == null) {
+        if (Utils.instance == null && Utils.logger == null) {
             throw new UnsupportedOperationException("Plugin instance is null and attempted to get it's logger!");
         }
-        return Utils.instance.getComponentLogger();
+        return Utils.logger != null && Utils.instance == null ? logger : Utils.instance.getComponentLogger();
+    }
+
+    /**
+     * Used to allow the logger during bootstrap.
+     *
+     * @param logger The {@link ComponentLogger} to set.
+     */
+    public static void setLogger(ComponentLogger logger) {
+        if (Utils.logger == null) {
+            if (Utils.instance == null) {
+                Utils.logger = logger;
+            } else {
+                throw new UnsupportedOperationException("Plugin instance has been set! The logger defaults to the plugins.");
+            }
+        } else {
+            throw new UnsupportedOperationException("Cannot update logger, please set the instance. (Utils#setInstance)");
+        }
     }
 
     /**
@@ -334,9 +333,6 @@ public final class Utils {
      * @param messages An array of messages that are then iterated through and sent to the console.
      */
     public static void log(@NotNull final String message, final String... messages) {
-        if (instance == null) {
-            throw new NullPointerException("Cannot log messages with a null plugin instance.");
-        }
         log("[Yggdrasil]", message, messages);
     }
 
@@ -362,10 +358,6 @@ public final class Utils {
      * @param messages An array of messages that are then iterated through and sent to the console.
      */
     public static void debugLog(@NotNull final String message, final String... messages) {
-        if (instance == null) {
-            throw new NullPointerException("Cannot log messages with a null plugin instance.");
-        }
-
         if (debug) {
             log("[Yggdrasil] [DEBUG]", message, messages);
         }
@@ -378,10 +370,6 @@ public final class Utils {
      * @param messages An array of messages that are then iterated through and sent to the console.
      */
     public static void logWarning(@NotNull String message, String... messages) {
-        if (instance == null) {
-            throw new NullPointerException("Cannot log messages with a null plugin instance.");
-        }
-
         getLogger().warn("[Yggdrasil] {}", message);
 
         if (!message.isEmpty())
@@ -396,10 +384,6 @@ public final class Utils {
      * @param messages An array of messages that are then iterated through and sent to the console.
      */
     public static void logError(@NotNull String message, String... messages) {
-        if (instance == null) {
-            throw new NullPointerException("Cannot log messages with a null plugin instance.");
-        }
-
         getLogger().error("[Yggdrasil] {}", message);
 
         if (!message.isEmpty())

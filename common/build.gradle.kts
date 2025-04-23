@@ -30,7 +30,7 @@ dependencies {
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
-    withJavadocJar() // TODO: This is dumb and it doesn't work, for some reason. test this again please.
+    withJavadocJar()
     withSourcesJar()
 }
 

@@ -104,7 +104,7 @@ public abstract class StandardMenu extends Menu {
     @NotNull
     @Override
     public MenuInventory formInventory() {
-        Objects.requireNonNull(title, "Title is not set in " + this + "!");
+        Objects.requireNonNull(title, "Title is not set in " + this.getClass().getSimpleName() + "!");
 
         final MenuInventory inv;
         if (rows != null && rows > 0) {

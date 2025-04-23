@@ -1,12 +1,13 @@
 package com.itsschatten.yggdrasil.menus.buttons.premade;
 
+import com.itsschatten.yggdrasil.items.ItemCreator;
+import com.itsschatten.yggdrasil.items.ItemOptions;
+import com.itsschatten.yggdrasil.items.MetaManipulator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
 import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
-import com.itsschatten.yggdrasil.items.ItemCreator;
-import com.itsschatten.yggdrasil.items.ItemOptions;
-import com.itsschatten.yggdrasil.items.MetaManipulator;
+import com.itsschatten.yggdrasil.menus.utils.MenuFunction;
 import lombok.Builder;
 import lombok.Singular;
 import org.bukkit.Material;
@@ -47,7 +48,12 @@ public final class ReturnButton extends Button {
      * The {@link ItemOptions} for the button.
      */
     @Builder.Default
-    private ItemOptions options = ItemOptions.HIDE_ALL_FLAGS;
+    private ItemOptions options = ItemOptions.EMPTY;
+
+    /**
+     * A function that can be used to determine if the menu can return.
+     */
+    private MenuFunction canReturn;
 
     /**
      * The {@link MetaManipulator}s for the item.
@@ -84,14 +90,19 @@ public final class ReturnButton extends Button {
     /**
      * {@inheritDoc}
      *
-     * @param user The {@link IMenuHolder} that clicked this button.
-     * @param menu The {@link Menu} that this button was clicked in.
+     * @param user  The {@link IMenuHolder} that clicked this button.
+     * @param menu  The {@link Menu} that this button was clicked in.
      * @param click The {@link ClickType} that was used to click this button.
      */
     @Override
     public void onClicked(IMenuHolder user, @NotNull Menu menu, ClickType click) {
+        if (canReturn != null && !canReturn.apply(user, menu, click)) {
+            return;
+        }
+
         menu.beforeReturn();
         menuToReturn.switchMenu(user, menu);
+
     }
 
     public static class ReturnButtonBuilder {
@@ -106,5 +117,5 @@ public final class ReturnButton extends Button {
         }
 
     }
-    
+
 }

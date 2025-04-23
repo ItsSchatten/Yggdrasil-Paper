@@ -19,6 +19,8 @@ import java.util.*;
 @UtilityClass
 public class WandUtils {
 
+    private final WandListeners LISTENER = new WandListeners();
+
     /**
      * A set of all {@link Wand}s
      * -- Getter --
@@ -29,8 +31,6 @@ public class WandUtils {
     @Getter
     private static Set<Wand> wands;
 
-    private final WandListeners listener = new WandListeners();
-
     /**
      * Initialize the wands, registering the listeners as well as assigning a new {@link HashSet}
      *
@@ -38,7 +38,7 @@ public class WandUtils {
      */
     public void initalize(final @NotNull Plugin plugin) {
         wands = new HashSet<>();
-        plugin.getServer().getPluginManager().registerEvents(listener, plugin);
+        plugin.getServer().getPluginManager().registerEvents(LISTENER, plugin);
         plugin.getServer().getPluginManager().registerEvents(new Listener() {
             @EventHandler
             public void onPluginDisable(final PluginDisableEvent event) {
@@ -54,7 +54,7 @@ public class WandUtils {
      * "Shutdown" the wands.
      */
     public void shutdown() {
-        HandlerList.unregisterAll(listener);
+        HandlerList.unregisterAll(LISTENER);
         wands = null;
     }
 
@@ -73,12 +73,12 @@ public class WandUtils {
         }
 
         final List<Location> locationList = new ArrayList<>();
-        if (WandListeners.getFirstLocationMap().containsKey(selectorUUID)) {
-            locationList.add(WandListeners.getFirstLocationMap().get(selectorUUID));
+        if (WandListeners.FIRST_LOCATION.containsKey(selectorUUID)) {
+            locationList.add(WandListeners.FIRST_LOCATION.get(selectorUUID));
         }
 
-        if (WandListeners.getSecondLocationMap().containsKey(selectorUUID)) {
-            locationList.add(WandListeners.getSecondLocationMap().get(selectorUUID));
+        if (WandListeners.SECOND_LOCATION.containsKey(selectorUUID)) {
+            locationList.add(WandListeners.SECOND_LOCATION.get(selectorUUID));
         }
 
         return locationList;
@@ -97,13 +97,13 @@ public class WandUtils {
         }
 
         final List<Location> locationList = new ArrayList<>();
-        if (WandListeners.getFirstLocationMap().containsKey(selectorUUID) && WandListeners.getSecondLocationMap().containsKey(selectorUUID)) {
-            locationList.add(WandListeners.getFirstLocationMap().get(selectorUUID));
-            locationList.add(WandListeners.getSecondLocationMap().get(selectorUUID));
+        if (WandListeners.FIRST_LOCATION.containsKey(selectorUUID) && WandListeners.SECOND_LOCATION.containsKey(selectorUUID)) {
+            locationList.add(WandListeners.FIRST_LOCATION.get(selectorUUID));
+            locationList.add(WandListeners.SECOND_LOCATION.get(selectorUUID));
         }
 
-        WandListeners.getFirstLocationMap().remove(selectorUUID);
-        WandListeners.getSecondLocationMap().remove(selectorUUID);
+        WandListeners.FIRST_LOCATION.remove(selectorUUID);
+        WandListeners.SECOND_LOCATION.remove(selectorUUID);
 
         return locationList;
     }

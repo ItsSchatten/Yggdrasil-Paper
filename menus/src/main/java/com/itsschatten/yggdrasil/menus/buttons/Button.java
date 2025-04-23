@@ -4,7 +4,6 @@ import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
-import com.itsschatten.yggdrasil.menus.utils.MenuRunnable;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;

@@ -121,7 +121,13 @@ public final class ItemCreator {
             if (this.name != null) meta.itemName(this.name);
             if (this.lore != null) meta.lore(this.lore);
 
-            if (this.options != null) this.options.apply(meta);
+            // Because this uses both ItemMeta options AND direct component manipulation,
+            // we have to apply the ItemMeta BEFORE we pass the stack for the most update
+            // to date information.
+            // We must then pass the meta back again to ensure it's updated properly.
+            stack.setItemMeta(meta);
+            if (this.options != null) this.options.apply(stack);
+            meta = stack.getItemMeta();
 
             stack.setItemMeta(meta);
         } else {
@@ -155,7 +161,12 @@ public final class ItemCreator {
             return display(StringUtil.color("<!i>" + display));
         }
 
-        public ItemCreatorBuilder lore(final @NotNull List<Component> lore) {
+        public ItemCreatorBuilder lore(final List<Component> lore) {
+            if (lore == null) {
+                this.lore = new ArrayList<>();
+                return this;
+            }
+
             this.lore = lore.stream().map(component -> component.colorIfAbsent(NamedTextColor.GRAY).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList();
             return this;
         }
@@ -178,7 +189,12 @@ public final class ItemCreator {
             return this;
         }
 
-        public ItemCreatorBuilder lore(final @NotNull Collection<String> lore) {
+        public ItemCreatorBuilder lore(final Collection<String> lore) {
+            if (lore == null) {
+                this.lore = new ArrayList<>();
+                return this;
+            }
+
             this.lore = lore.stream().map(string -> StringUtil.color("<!i><gray>" + string)).toList();
             return this;
         }

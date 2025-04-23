@@ -1,10 +1,10 @@
 package com.itsschatten.yggdrasil.menus.types;
 
+import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
 import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
-import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.utils.MenuInventory;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryType;
@@ -141,7 +141,7 @@ public abstract class ListMenu<T> extends StandardMenu {
                         }
 
                         @Override
-                        public void onClicked(final IMenuHolder user,final Menu menu, final ClickType click) {
+                        public void onClicked(final IMenuHolder user, final Menu menu, final ClickType click) {
                             onUnusedClick(user, click);
                         }
 
@@ -168,8 +168,6 @@ public abstract class ListMenu<T> extends StandardMenu {
      */
     @Override
     public @NotNull MenuInventory formInventory() {
-        final MenuInventory inv = super.formInventory();
-
         if (!getPlaceablePositions().isEmpty()) {
             for (int i = 0; i < getPlaceablePositions().size(); i++) {
                 // Used because of inner classes.
@@ -185,7 +183,7 @@ public abstract class ListMenu<T> extends StandardMenu {
                         }
 
                         @Override
-                        public void onClicked(final IMenuHolder user,final Menu menu, final ClickType click) {
+                        public void onClicked(final IMenuHolder user, final Menu menu, final ClickType click) {
                             onUnusedClick(user, click);
                         }
 
@@ -203,7 +201,7 @@ public abstract class ListMenu<T> extends StandardMenu {
             }
         }
 
-        return inv;
+        return super.formInventory();
     }
 
     private @NotNull Button getButton(int finalI) {
@@ -215,7 +213,7 @@ public abstract class ListMenu<T> extends StandardMenu {
             }
 
             @Override
-            public void onClicked(final IMenuHolder user,final Menu menu, final ClickType click) {
+            public void onClicked(final IMenuHolder user, final Menu menu, final ClickType click) {
                 onUsedClick(user, obj, click);
             }
 
