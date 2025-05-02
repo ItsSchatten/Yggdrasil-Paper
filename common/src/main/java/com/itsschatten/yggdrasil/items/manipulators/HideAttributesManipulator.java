@@ -1,20 +1,19 @@
 package com.itsschatten.yggdrasil.items.manipulators;
 
-import com.google.common.collect.ArrayListMultimap;
+import com.itsschatten.yggdrasil.items.ItemManipulator;
 import com.itsschatten.yggdrasil.items.MetaManipulator;
-import org.bukkit.inventory.ItemFlag;
-import org.bukkit.inventory.meta.ItemMeta;
+import io.papermc.paper.datacomponent.DataComponentTypes;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A prebuilt {@link MetaManipulator} that will add an empty map to the item's attributes and then {@link org.bukkit.inventory.ItemFlag#HIDE_ATTRIBUTES}.
  */
-public final class HideAttributesManipulator implements MetaManipulator {
+public final class HideAttributesManipulator implements ItemManipulator {
 
     @Override
-    public void apply(final @NotNull ItemMeta meta) {
-        meta.setAttributeModifiers(ArrayListMultimap.create());
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+    public void apply(@NotNull ItemStack itemStack) {
+        itemStack.unsetData(DataComponentTypes.ATTRIBUTE_MODIFIERS);
     }
 
 }
