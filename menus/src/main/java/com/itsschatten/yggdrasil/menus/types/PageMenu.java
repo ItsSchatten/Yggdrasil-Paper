@@ -4,7 +4,7 @@ import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
-import com.itsschatten.yggdrasil.menus.utils.MenuInventory;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.MenuPage;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -23,12 +23,12 @@ import java.util.stream.Collectors;
 /**
  * A menu that can show different pages based on the page viewed without the need to open a new menu each time.
  */
-public abstract class PageMenu extends StandardMenu {
+public abstract class PageMenu<T extends MenuHolder> extends StandardMenu<T> {
 
     /**
      * The list of all registered page buttons, this is WILL change throughout the menu's life.
      */
-    private final List<Button> registeredPageButtons = new ArrayList<>();
+    private final List<Button<T>> registeredPageButtons = new ArrayList<>();
 
     /**
      * The default {@link ItemStack}, designated by {@link ItemCreator}, that will be placed in previous page button places.
@@ -50,12 +50,12 @@ public abstract class PageMenu extends StandardMenu {
     /**
      * The currently viewed page.
      */
-    private MenuPage currentPage;
+    private MenuPage<T> currentPage;
 
     /**
      * The previously viewed page.
      */
-    private MenuPage previousPage;
+    private MenuPage<T> previousPage;
 
     /**
      * Constructs a PageMenu.
@@ -63,8 +63,8 @@ public abstract class PageMenu extends StandardMenu {
      * @param parent      The parent for this menu, used to return to later.
      * @param defaultItem The item that will replace previously placed page buttons.
      */
-    public PageMenu(@Nullable Menu parent, ItemCreator defaultItem) {
-        super(parent);
+    public PageMenu(@Nullable Menu<T> parent, String title, int size, ItemCreator defaultItem) {
+        super(parent, title, size);
         this.defaultItem = defaultItem == null ? ItemCreator.of(Material.AIR).build() : defaultItem;
     }
 
@@ -73,14 +73,14 @@ public abstract class PageMenu extends StandardMenu {
      *
      * @return Returns a {@link List} of {@link MenuPage}s.
      */
-    public abstract @NotNull List<MenuPage> makePages();
+    public abstract @NotNull List<MenuPage<T>> makePages();
 
     /**
      * A "constant" value of pages.
      *
      * @return Returns {@link #makePages()}.
      */
-    public final @NotNull List<MenuPage> pages() {
+    public final @NotNull List<MenuPage<T>> pages() {
         return makePages();
     }
 
@@ -98,7 +98,7 @@ public abstract class PageMenu extends StandardMenu {
      *
      * @param buttons The buttons to register.
      */
-    public final void registerPageButtons(Collection<Button> buttons) {
+    public final void registerPageButtons(Collection<Button<T>> buttons) {
         registeredPageButtons.addAll(buttons);
     }
 
@@ -107,29 +107,23 @@ public abstract class PageMenu extends StandardMenu {
      *
      * @param buttons The buttons to register.
      */
-    public final void registerPageButtons(Button... buttons) {
+    @SafeVarargs
+    public final void registerPageButtons(Button<T>... buttons) {
         registeredPageButtons.addAll(Arrays.stream(buttons).collect(Collectors.toSet()));
     }
 
     /**
-     * Check to see if there provided {@link InventoryPosition} is taken by a page button.
-     * <br>
-     * Modeled after {@link Menu#isSlotTakenByButton(InventoryPosition)}
+     * {@inheritDoc}
      *
-     * @param position The position to check.
-     * @return <code>true</code> if the position is occupied by a registered button.
-     * @see Menu#isSlotTakenByButton(InventoryPosition)
+     * @param position
+     * @return Returns {@code true} if, and only if, a {@link Button} was found to be in the same position as the one provided.
      */
-    public boolean isSlotTakenByPageButton(InventoryPosition position) {
-        // Loop registered page buttons and check if the position is taken.
-        for (final Button button : this.registeredPageButtons) {
-            // Check if we have permission for the button to appear.
-            if (button.getPermission() != null && !viewer.getBase().hasPermission(button.getPermission()))
-                continue;
-
-            if (button.getPosition().equals(position)) return true;
-        }
-        return false;
+    @Override
+    public boolean isSlotTakenByButton(InventoryPosition position) {
+        return registeredPageButtons.stream()
+                .filter(button -> button.getPermission() != null && !holder().hasPermission(button.getPermission()))
+                .anyMatch(button -> button.getPosition().equals(position))
+                && super.isSlotTakenByButton(position);
     }
 
     /**
@@ -172,8 +166,8 @@ public abstract class PageMenu extends StandardMenu {
      * Draws the page to the menu.
      */
     private void drawPage() {
-        final List<MenuPage> pages = this.pages();
-        final MenuPage menuPage = pages.get(viewedPage - 1);
+        final List<MenuPage<T>> pages = this.pages();
+        final MenuPage<T> menuPage = pages.get(viewedPage - 1);
 
         if (this.currentPage != null && this.currentPage != menuPage)
             this.previousPage = this.currentPage;
@@ -188,24 +182,22 @@ public abstract class PageMenu extends StandardMenu {
     /**
      * Get a {@link Button} from the {@link #registeredPageButtons} based on the {@link ItemStack} provided.
      *
-     * @return Returns {@link #getButtonImpl(ItemStack, List)}.
+     * @param stack    The item stack clicked.
+     * @param position The position clicked.
+     * @return Returns {@link #getButtonImpl(ItemStack, InventoryPosition, List)}.
      */
-    public final Button getPageButton(final ItemStack stack) {
+    public final Button<T> getPageButton(final ItemStack stack, InventoryPosition position) {
         if (stack == null) return null;
 
-        return getButtonImpl(stack, registeredPageButtons);
+        return getButtonImpl(stack, position, registeredPageButtons);
     }
 
     /**
      * {@inheritDoc}
-     *
-     * @return The fully drawn inventory.
      */
     @Override
-    public @NotNull MenuInventory formInventory() {
-        final MenuInventory inv = super.formInventory();
-
+    public void formInventory() {
+        super.formInventory();
         drawPage();
-        return inv;
     }
 }

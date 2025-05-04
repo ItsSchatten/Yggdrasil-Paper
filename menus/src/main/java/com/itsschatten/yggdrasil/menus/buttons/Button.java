@@ -2,8 +2,8 @@ package com.itsschatten.yggdrasil.menus.buttons;
 
 import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
-import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +14,7 @@ import java.util.Collection;
 /**
  * Represents a button for a {@link Menu}.
  */
-public abstract class Button {
+public abstract class Button<T extends MenuHolder> {
 
     /**
      * Instance stack to make {@link ItemStack} checks reliable.
@@ -46,11 +46,11 @@ public abstract class Button {
     /**
      * What should happen when a player clicks this button.
      *
-     * @param user  The {@link IMenuHolder} that clicked this button.
+     * @param user  The {@link MenuHolder} that clicked this button.
      * @param menu  The {@link Menu} that this button was clicked in.
      * @param click The {@link ClickType} that was used to click this button.
      */
-    public abstract void onClicked(final IMenuHolder user, final Menu menu, final ClickType click);
+    public abstract void onClicked(final T user, final Menu<T> menu, final ClickType click);
 
     /**
      * The position of this button.

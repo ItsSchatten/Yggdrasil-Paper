@@ -1,6 +1,7 @@
 package com.itsschatten.yggdrasil.menus.buttons;
 
 import com.itsschatten.yggdrasil.menus.buttons.impl.*;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -14,7 +15,7 @@ public final class Buttons {
      *
      * @return Returns a new {@link AnimatedButtonImpl} builder via {@link AnimatedButtonImpl#builder()}.
      */
-    public static AnimatedButtonImpl.Builder animated() {
+    public static <T extends MenuHolder> AnimatedButtonImpl.Builder<T> animated() {
         return AnimatedButtonImpl.builder();
     }
 
@@ -23,7 +24,7 @@ public final class Buttons {
      *
      * @return Returns a new {@link AnimatedCommandButtonImpl} builder via {@link AnimatedCommandButtonImpl#builder()}.
      */
-    public static AnimatedCommandButtonImpl.Builder animatedCommand() {
+    public static <T extends MenuHolder> AnimatedCommandButtonImpl.Builder<T> animatedCommand() {
         return AnimatedCommandButtonImpl.builder();
     }
 
@@ -32,7 +33,7 @@ public final class Buttons {
      *
      * @return Returns a new {@link AnimatedMenuTriggerButtonImpl} builder via {@link AnimatedMenuTriggerButtonImpl#builder()}.
      */
-    public static AnimatedMenuTriggerButtonImpl.Builder animatedMenuTrigger() {
+    public static <T extends MenuHolder> AnimatedMenuTriggerButtonImpl.Builder<T> animatedMenuTrigger() {
         return AnimatedMenuTriggerButtonImpl.builder();
     }
 
@@ -41,7 +42,7 @@ public final class Buttons {
      *
      * @return Returns a new {@link AnimatedSimpleButtonImpl} builder via {@link AnimatedSimpleButtonImpl#builder()}.
      */
-    public static AnimatedSimpleButtonImpl.Builder animatedSimple() {
+    public static <T extends MenuHolder> AnimatedSimpleButtonImpl.Builder<T> animatedSimple() {
         return AnimatedSimpleButtonImpl.builder();
     }
 
@@ -50,7 +51,7 @@ public final class Buttons {
      *
      * @return Returns a new {@link ButtonImpl} builder via {@link ButtonImpl#builder()}.
      */
-    public static ButtonImpl.Builder button() {
+    public static <T extends MenuHolder> ButtonImpl.Builder<T> button() {
         return ButtonImpl.builder();
     }
 
@@ -59,7 +60,7 @@ public final class Buttons {
      *
      * @return Returns a new {@link CommandButtonImpl} builder via {@link CommandButtonImpl#builder()}.
      */
-    public static CommandButtonImpl.Builder command() {
+    public static <T extends MenuHolder> CommandButtonImpl.Builder<T> command() {
         return CommandButtonImpl.builder();
     }
 
@@ -68,7 +69,7 @@ public final class Buttons {
      *
      * @return Returns a new {@link DynamicButtonImpl} builder via {@link DynamicButtonImpl#builder()}.
      */
-    public static DynamicButtonImpl.Builder dynamic() {
+    public static <T extends MenuHolder> DynamicButtonImpl.Builder<T> dynamic() {
         return DynamicButtonImpl.builder();
     }
 
@@ -77,7 +78,7 @@ public final class Buttons {
      *
      * @return Returns a new {@link SimpleButtonImpl} builder via {@link SimpleButtonImpl#builder()}.
      */
-    public static SimpleButtonImpl.Builder simple() {
+    public static <T extends MenuHolder> SimpleButtonImpl.Builder<T> simple() {
         return SimpleButtonImpl.builder();
     }
 
@@ -86,7 +87,7 @@ public final class Buttons {
      *
      * @return Returns a new {@link MenuTriggerButtonImpl} builder via {@link MenuTriggerButtonImpl#builder()}.
      */
-    public static MenuTriggerButtonImpl.Builder menuTrigger() {
+    public static <T extends MenuHolder> MenuTriggerButtonImpl.Builder<T> menuTrigger() {
         return MenuTriggerButtonImpl.builder();
     }
 

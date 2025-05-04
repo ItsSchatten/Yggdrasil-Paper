@@ -28,7 +28,9 @@ public final class OneTimeRunnable {
             return;
 
         try {
-            runnable.run();
+            synchronized (this) {
+                runnable.run();
+            }
         } finally {
             hasBeenRun = true;
         }

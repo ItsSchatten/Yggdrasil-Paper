@@ -5,17 +5,15 @@ import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
 import com.itsschatten.yggdrasil.menus.buttons.interfaces.AlternativeDisplayItem;
-import com.itsschatten.yggdrasil.menus.types.PageMenu;
-import com.itsschatten.yggdrasil.menus.types.PaginatedMenu;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -23,24 +21,25 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * This class is based mostly on MinusKube's SmartInvs.
  * <a href="https://github.com/MinusKube/SmartInvs/blob/master/src/main/java/fr/minuskube/inv/content/InventoryContents.java">Class on GitHub</a>
- * <p>
- * This is "implemented" in {@link AbstractMenuInventory}, with that class being implemented in {@link Menu}
+ * </p>
  *
- * @see AbstractMenuInventory
+ * @param <T> A generic class that can be a {@link MenuHolder}.
  * @see Menu
  */
-public class MenuInventory implements InventoryHolder {
+public abstract class MenuInventory<T extends MenuHolder> implements InventoryHolder {
 
     /**
      * The number of rows for this inventory.
      */
     @Getter
+    @Accessors(fluent = true)
     private final int rows;
 
     /**
      * The columns of this inventory. Should always be nine, as we don't use other inventory types.
      */
     @Getter
+    @Accessors(fluent = true)
     private final int columns = 9;
 
     /**
@@ -51,7 +50,6 @@ public class MenuInventory implements InventoryHolder {
     /**
      * The actual {@link Inventory}.
      */
-    @Getter(AccessLevel.PUBLIC)
     private final Inventory bukkitInventory;
 
     /**
@@ -65,60 +63,32 @@ public class MenuInventory implements InventoryHolder {
      * The viewer of this inventory.
      */
     @Setter
-    private IMenuHolder viewer;
-
-    /**
-     * The menu that this inventory belongs to.
-     */
     @Getter
-    @Setter
-    private Menu menu;
-
-    /**
-     * An animate task, used in animating the title of the inventory.
-     */
-    @Getter
-    private int animateTask;
+    @Accessors(fluent = true)
+    private T holder;
 
     /**
      * Constructs a new MenuInventory.
      *
      * @param size  The full size of the inventory must be a multiple of nine.
-     * @param menu  The menu this inventory belongs to.
      * @param title The title of this inventory.
      */
-    private MenuInventory(int size, @NotNull Menu menu, String title) {
+    public MenuInventory(int size, String title) {
         this.title = title;
         this.rows = size / 9;
         this.contents = new ItemStack[size / 9][9];
-        this.menu = menu;
         this.bukkitInventory = Bukkit.createInventory(this, size, StringUtil.color(this.title));
     }
 
     /**
-     * Creates an inventory from the size provided.
+     * Returns the size of the inventory.
      *
-     * @param size  The size of the inventory.
-     * @param menu  The menu this instance belongs too.
-     * @param title The title of the menu.
-     * @return A new instance of {@link MenuInventory}
+     * @return The size of the inventory, always a multiple of 9.
      */
-    @Contract(value = "_, _, _ -> new", pure = true)
-    public static @NotNull MenuInventory of(int size, Menu menu, String title) {
-        return new MenuInventory(size, menu, title);
-    }
-
-    /**
-     * Creates an inventory of the rows provided.
-     *
-     * @param rows  The rows that this menu should contain.
-     * @param menu  The menu this instance belongs too.
-     * @param title The title of the menu.
-     * @return A new instance of {@link MenuInventory}
-     */
-    @Contract(value = "_, _, _ -> new", pure = true)
-    public static @NotNull MenuInventory ofRows(int rows, Menu menu, String title) {
-        return of(9 * rows, menu, title);
+    public final int getSize() {
+        // Because we define rows using the size and store that variable,
+        // we must multiply the rows by 9 to get the appropriate size of the inventory.
+        return rows * 9;
     }
 
     /**
@@ -128,35 +98,17 @@ public class MenuInventory implements InventoryHolder {
      */
     @NotNull
     @Override
-    public Inventory getInventory() {
-        return getBukkitInventory();
+    public final Inventory getInventory() {
+        return bukkitInventory;
     }
 
     /**
-     * Clears the animate task.
-     */
-    public final void clearAnimateTask() {
-        this.animateTask = 0;
-    }
-
-    /**
-     * Check if an {@link InventoryPosition} is taken by a {@link Button}.
+     * Determine if an {@link InventoryPosition} is currently taken by a {@link Button}.
      *
-     * @param position The {@link InventoryPosition} to check.
-     * @return <code>true</code> of a {@link Button} is found in the position, <code>false</code> otherwise.
-     * @see Menu#isSlotTakenByButton(InventoryPosition)
+     * @param position The position to check.
+     * @return Returns {@code true} if, and only if, a {@link Button} was found to be in the same position as the one provided.
      */
-    public final boolean isSlotTakenByButton(final InventoryPosition position) {
-        if (menu instanceof PageMenu paged) {
-            return menu.isSlotTakenByButton(position) || paged.isSlotTakenByPageButton(position);
-        }
-
-        if (menu instanceof PaginatedMenu<?> paged) {
-            return menu.isSlotTakenByButton(position) || paged.isSlotTakenByPageButton(position);
-        }
-
-        return menu.isSlotTakenByButton(position);
-    }
+    public abstract boolean isSlotTakenByButton(InventoryPosition position);
 
     /**
      * Utility method to check if an {@link InventoryPosition} is taken by an {@link ItemStack}.
@@ -165,8 +117,8 @@ public class MenuInventory implements InventoryHolder {
      * @return <code>true</code> if something is in the position, <code>false</code> otherwise.
      */
     public final boolean isSlotTaken(InventoryPosition position) {
-        for (int row = 0; row < getRows(); row++) {
-            for (int column = 0; column < getColumns(); column++) {
+        for (int row = 0; row < rows; row++) {
+            for (int column = 0; column < columns; column++) {
                 if (contents[row][column] != null && contents[row][column].getType() != Material.AIR) {
                     if (position.equals(InventoryPosition.of(row, column))) return true;
                 }
@@ -202,13 +154,13 @@ public class MenuInventory implements InventoryHolder {
      * @param stack The stack we should use to fill the inventory.
      */
     public final void fill(final ItemStack stack) {
-        for (int row = 0; row < getRows(); row++) {
-            for (int column = 0; column < getColumns(); column++) {
+        for (int row = 0; row < rows; row++) {
+            for (int column = 0; column < columns; column++) {
                 final InventoryPosition pos = InventoryPosition.of(row, column);
-                if (/*!isSlotTaken(pos) &&*/ !isSlotTakenByButton(pos)) {
+                if (!isSlotTakenByButton(pos)) {
                     contents[row][column] = stack;
 
-                    if (viewer != null) {
+                    if (holder != null) {
                         updateInv(row, column, stack);
                     }
                 }
@@ -296,7 +248,7 @@ public class MenuInventory implements InventoryHolder {
             for (int column = fromColumn; column <= toColumn; column++) {
                 if (row != fromRow && row != toRow && column != fromColumn && column != toColumn) continue;
 
-                if (viewer != null && menu != null) {
+                if (holder != null) {
                     if (isSlotTakenByButton(InventoryPosition.of(row, column))) continue;
                 }
 
@@ -328,31 +280,34 @@ public class MenuInventory implements InventoryHolder {
     /**
      * Display this inventory.
      *
-     * @param user The {@link IMenuHolder} that should be viewing this inventory.
+     * @param user The {@link T} that should be viewing this inventory.
      */
-    public final void display(@NotNull final IMenuHolder user) {
+    @ApiStatus.Internal
+    protected final void display(@NotNull final T user) {
         for (int row = 0; row < contents.length; row++) {
             for (int column = 0; column < contents[row].length; column++) {
                 if (contents[row][column] != null) setItem(columns * row + column, contents[row][column]);
             }
         }
-        viewer = user;
-        user.getBase().openInventory(bukkitInventory);
+
+        holder = user;
+        user.player().openInventory(bukkitInventory);
     }
 
     /**
      * Show the menu.
      *
-     * @param user The {@link IMenuHolder} that should be shown this menu.
+     * @param user The {@link T} that should be shown this menu.
      */
-    public final void show(@NotNull final IMenuHolder user) {
+    @ApiStatus.Internal
+    protected final void show(@NotNull final T user) {
         for (int row = 0; row < contents.length; row++) {
             for (int column = 0; column < contents[row].length; column++) {
                 if (contents[row][column] != null) setItem(columns * row + column, contents[row][column]);
             }
         }
 
-        user.getBase().openInventory(bukkitInventory);
+        user.player().openInventory(bukkitInventory);
     }
 
     /**
@@ -412,7 +367,7 @@ public class MenuInventory implements InventoryHolder {
      */
     public final void forceSet(final int row, final int column, @NotNull final Button button) {
         if (button.getPermission() != null)
-            forceSet(row, column, viewer.getBase().hasPermission(button.getPermission()) ?
+            forceSet(row, column, holder.hasPermission(button.getPermission()) ?
                     button instanceof AlternativeDisplayItem alt ? alt.displayItem() : button.getItem()
                     : null);
         else
@@ -501,7 +456,7 @@ public class MenuInventory implements InventoryHolder {
      */
     public final void set(final int row, final int column, @NotNull final Button button) {
         if (button.getPermission() != null)
-            set(row, column, viewer.getBase().hasPermission(button.getPermission()) ? button.getItem() : null);
+            set(row, column, holder.hasPermission(button.getPermission()) ? button.getItem() : null);
         else set(row, column, button.getItem());
     }
 
@@ -534,7 +489,7 @@ public class MenuInventory implements InventoryHolder {
      * @param button   The {@link Button} to get the {@link ItemStack} from.
      * @see #set(int, int, ItemStack)
      */
-    public final void set(final InventoryPosition position, @NotNull final Button button) {
+    public final void set(final InventoryPosition position, @NotNull final Button<T> button) {
         if (position == null) return;
         set(position.row(), position.column(), button);
     }
@@ -547,15 +502,11 @@ public class MenuInventory implements InventoryHolder {
      * @param stack  The {@link ItemStack} to update the slot with.
      */
     private void updateInv(final int row, final int column, final ItemStack stack) {
-        if (viewer == null) {
+        if (holder == null) {
             return;
         }
 
-        if (menu == null) {
-            return;
-        }
-        final Inventory inventory = getBukkitInventory();
-        inventory.setItem(columns * row + column, stack);
+        bukkitInventory.setItem(columns * row + column, stack);
     }
 
     /**

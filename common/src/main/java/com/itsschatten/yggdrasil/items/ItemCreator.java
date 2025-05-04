@@ -98,6 +98,11 @@ public final class ItemCreator {
      */
     public @NotNull ItemStack make() {
         final ItemStack stack = new ItemStack(material, amount);
+        // Return an AIR ItemStack, can't modify it anyway.
+        if (material.isAir()) {
+            return stack;
+        }
+
         ItemMeta meta = this.meta != null ? this.meta : stack.getItemMeta();
         // To update the item properly using the manipulators, we must pass the "copied" meta if it is provided.
         // Failing to do so will allow the item to become "out of sync" with what we would expect.
@@ -131,7 +136,7 @@ public final class ItemCreator {
 
             stack.setItemMeta(meta);
         } else {
-            throw new IllegalStateException("ItemMeta in an ItemCreator make method must not be null!");
+            throw new IllegalStateException("ItemMeta in an ItemCreator make method must not be null! (Material: " + material + ")");
         }
 
         return stack;

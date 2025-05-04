@@ -1,8 +1,7 @@
 package com.itsschatten.yggdrasil.menus.buttons;
 
 import com.itsschatten.yggdrasil.menus.Menu;
-import com.itsschatten.yggdrasil.menus.types.StandardMenu;
-import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import org.bukkit.Bukkit;
 import org.bukkit.event.inventory.ClickType;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
  * @see Button
  * @see AnimatedCommandButton
  */
-public abstract class CommandButton extends Button {
+public abstract class CommandButton<T extends MenuHolder> extends Button<T> {
 
     /**
      * The command to be executed.
@@ -44,16 +43,16 @@ public abstract class CommandButton extends Button {
     /**
      * {@inheritDoc}
      *
-     * @param user The {@link IMenuHolder} that clicked this button.
-     * @param menu The {@link Menu} that this button was clicked in.
+     * @param user  The {@link T} that clicked this button.
+     * @param menu  The {@link Menu} that this button was clicked in.
      * @param click The {@link ClickType} that was used to click this button.
      */
     @Override
-    public final void onClicked(@NotNull IMenuHolder user, Menu menu, ClickType click) {
-        Bukkit.dispatchCommand(executeByConsole() ? Bukkit.getConsoleSender() : user.getBase(),
+    public final void onClicked(@NotNull T user, Menu<T> menu, ClickType click) {
+        Bukkit.dispatchCommand(executeByConsole() ? Bukkit.getConsoleSender() : user.player(),
                 getCommand().startsWith("/") ? getCommand().substring(1) : getCommand());
 
         if (closeOnExecute())
-            user.getBase().closeInventory();
+            user.player().closeInventory();
     }
 }

@@ -3,7 +3,7 @@ package com.itsschatten.yggdrasil.anvilgui;
 import com.itsschatten.yggdrasil.StringUtil;
 import com.itsschatten.yggdrasil.anvilgui.interfaces.ClickHandler;
 import com.itsschatten.yggdrasil.anvilgui.interfaces.Response;
-import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -67,9 +67,9 @@ public final class AnvilGUI {
     private final Player player;
 
     /**
-     * The {@link IMenuHolder} that the inventory was opened for.
+     * The {@link MenuHolder} that the inventory was opened for.
      */
-    private final IMenuHolder holder;
+    private final MenuHolder holder;
 
     /**
      * The initial items in the inventory, set in the builder under the names {@code inputLeft}, {@code inputRight}, and {@code output}
@@ -144,7 +144,7 @@ public final class AnvilGUI {
      *
      * @param plugin                  The {@link Plugin} instance to use to register tasks and such.
      * @param player                  The {@link Player} this AnvilGUI is for, may be {@code null} if holder is set.
-     * @param holder                  The {@link IMenuHolder} this AnvilGUI is for, may be {@code null} if the {@link Player} is set.
+     * @param holder                  The {@link MenuHolder} this AnvilGUI is for, may be {@code null} if the {@link Player} is set.
      * @param inputLeft               The first input {@link ItemStack}, defaults to paper if {@code null}.
      * @param inputRight              The second input slot.
      * @param output                  The output item.
@@ -159,7 +159,7 @@ public final class AnvilGUI {
      * @param itemText                The text that appears on the input item will not be used if the first input item is not null.
      */
     @Builder
-    public AnvilGUI(@NotNull Plugin plugin, Player player, IMenuHolder holder, ItemStack inputLeft, ItemStack inputRight, ItemStack output, boolean preventClosing, Set<Integer> interactableSlots, Executor executor, Consumer<Snapshot> onClose, ClickHandler clickHandler, boolean concurrentClickHandlers, Response response, Component title, Component itemText) {
+    public AnvilGUI(@NotNull Plugin plugin, Player player, MenuHolder holder, ItemStack inputLeft, ItemStack inputRight, ItemStack output, boolean preventClosing, Set<Integer> interactableSlots, Executor executor, Consumer<Snapshot> onClose, ClickHandler clickHandler, boolean concurrentClickHandlers, Response response, Component title, Component itemText) {
         this.plugin = plugin;
         this.player = player;
         this.holder = holder;
@@ -178,7 +178,7 @@ public final class AnvilGUI {
     /**
      * Opens the inventory and configures anything that needs to be configured.
      */
-    public final void openInventory() {
+    public void openInventory() {
         Bukkit.getPluginManager().registerEvents(this.listener, this.plugin);
 
         if (this.player != null) {
@@ -186,8 +186,8 @@ public final class AnvilGUI {
             this.player.openInventory(view);
             this.inventory = view.getTopInventory();
         } else if (this.holder != null) {
-            this.view = MenuType.ANVIL.create(this.holder.getBase(), title);
-            this.holder.getBase().openInventory(view);
+            this.view = MenuType.ANVIL.create(this.holder.player(), title);
+            this.holder.player().openInventory(view);
             this.inventory = view.getTopInventory();
         } else {
             throw new UnsupportedOperationException("Both player and holder are null! The menu cannot be opened.");
@@ -204,14 +204,14 @@ public final class AnvilGUI {
     /**
      * Method to close the inventory.
      */
-    public final void closed() {
+    public void closed() {
         closed(true);
     }
 
     /**
      * Closes the inventory, calls {@link #onClose}, and unregisters the listener.
      */
-    public final void closed(boolean close) {
+    public void closed(boolean close) {
         if (!this.open) return;
 
         this.open = false;
@@ -220,7 +220,7 @@ public final class AnvilGUI {
             if (this.player != null) {
                 this.player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
             } else if (this.holder != null) {
-                this.holder.getBase().closeInventory(InventoryCloseEvent.Reason.PLUGIN);
+                this.holder.player().closeInventory(InventoryCloseEvent.Reason.PLUGIN);
             }
         }
 
@@ -241,6 +241,7 @@ public final class AnvilGUI {
         /**
          * Set the title for the GUI.
          *
+         * @param title The component title for this GUI.
          * @return this builder for chaining.
          */
         public AnvilGUIBuilder title(Component title) {
@@ -248,32 +249,68 @@ public final class AnvilGUI {
             return this;
         }
 
+        /**
+         * Set the title for this GUI.
+         *
+         * @param title The title to set, as a String. This is later converted to a {@link Component} using {@link StringUtil#color(String)}
+         * @return this builder for chaining.
+         */
         public AnvilGUIBuilder title(String title) {
             this.title = StringUtil.color(title);
             return this;
         }
 
-        public AnvilGUIBuilder itemText(Component title) {
-            this.itemText = title;
+        /**
+         * The text that appears on the first item in the inventory.
+         *
+         * @param text The {@link Component} to set the name of the item to.
+         * @return this builder for chaining.
+         */
+        public AnvilGUIBuilder itemText(Component text) {
+            this.itemText = text;
             return this;
         }
 
-        public AnvilGUIBuilder itemText(String title) {
-            this.itemText = Component.text(title);
+        /**
+         * The text that appears on the first item in the inventory.
+         *
+         * @param text The String to set the name of the item to.
+         * @return this builder for chaining.
+         */
+        public AnvilGUIBuilder itemText(String text) {
+            this.itemText = Component.text(text);
             return this;
         }
 
+        /**
+         * What should happen when an item is clicked.
+         *
+         * @param click The function to execute when clicking.
+         * @return this builder for chaining.
+         */
         public AnvilGUIBuilder onClick(BiFunction<Integer, Snapshot, List<Response>> click) {
             this.clickHandler = (slot, snapshot) -> CompletableFuture.completedFuture(click.apply(slot, snapshot));
             return this;
         }
 
+        /**
+         * What should happen when an item is clicked, but this is executed asynchronously.
+         *
+         * @param onClick The {@link ClickHandler}.
+         * @return this builder for chaining.
+         */
         public AnvilGUIBuilder onClickAsync(ClickHandler onClick) {
             this.clickHandler = onClick;
             return this;
         }
 
-        public AnvilGUI open(final IMenuHolder holder) {
+        /**
+         * Open the Anvil for a {@link MenuHolder}.
+         *
+         * @param holder The holder to open this anvil for.
+         * @return this builder for chaining.
+         */
+        public AnvilGUI open(final MenuHolder holder) {
             Validate.notNull(holder, "Player cannot be null!");
 
             configure();
@@ -285,6 +322,12 @@ public final class AnvilGUI {
             return gui;
         }
 
+        /**
+         * Open this Anvil for a {@link Player}.
+         *
+         * @param player The player to open this anvil for
+         * @return this builder for chaining.
+         */
         public AnvilGUI open(final Player player) {
             Validate.notNull(player, "Player cannot be null!");
 
@@ -297,6 +340,9 @@ public final class AnvilGUI {
             return gui;
         }
 
+        /**
+         * Utility method to configure default values.
+         */
         private void configure() {
             Validate.notNull(this.plugin, "Plugin cannot be null!");
             Validate.notNull(this.clickHandler, "Click handler cannot be null!");

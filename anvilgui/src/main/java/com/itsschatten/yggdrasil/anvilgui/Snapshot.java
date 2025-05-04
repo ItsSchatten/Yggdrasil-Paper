@@ -1,6 +1,6 @@
 package com.itsschatten.yggdrasil.anvilgui;
 
-import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -23,34 +23,6 @@ import org.jetbrains.annotations.NotNull;
 @ToString
 @EqualsAndHashCode
 public final class Snapshot {
-
-    /**
-     * Return the provided {@link ItemStack} if not null, otherwise return an ItemStack with {@link Material#AIR}.
-     *
-     * @param itemStack The {@link ItemStack} to check for nullity.
-     * @return Always returns an {@link ItemStack}, if the provided ItemStack is null the material will be {@link Material#AIR}
-     */
-    @Contract("null -> new; !null -> param1")
-    private static @NotNull ItemStack returnItemOrDefault(final ItemStack itemStack) {
-        return itemStack == null ? new ItemStack(Material.AIR) : itemStack;
-    }
-
-    /**
-     * Builds a {@link Snapshot} from a fully built {@link AnvilGUI}.
-     *
-     * @param gui The {@link AnvilGUI} instance to build a snapshot from.
-     * @return Returns a {@link Snapshot}.
-     */
-    @Contract("_ -> new")
-    static @NotNull Snapshot fromBuilt(final @NotNull AnvilGUI gui) {
-        final Inventory inventory = gui.inventory();
-
-        if (gui.player() != null) {
-            return new Snapshot(returnItemOrDefault(inventory.getItem(Slot.INPUT_LEFT)), returnItemOrDefault(inventory.getItem(Slot.INPUT_RIGHT)), returnItemOrDefault(inventory.getItem(Slot.OUTPUT)), gui.view(), gui.player());
-        } else {
-            return new Snapshot(returnItemOrDefault(inventory.getItem(Slot.INPUT_LEFT)), returnItemOrDefault(inventory.getItem(Slot.INPUT_RIGHT)), returnItemOrDefault(inventory.getItem(Slot.OUTPUT)), gui.view(), gui.holder());
-        }
-    }
 
     /**
      * The first item in the inventory.
@@ -78,9 +50,9 @@ public final class Snapshot {
     private final Player player;
 
     /**
-     * A {@link IMenuHolder} for the AnvilGUI, possibly {@code null}.
+     * A {@link MenuHolder} for the AnvilGUI, possibly {@code null}.
      */
-    private final IMenuHolder holder;
+    private final MenuHolder holder;
 
     /**
      * Builds a snapshot with a {@link Player}.
@@ -101,21 +73,49 @@ public final class Snapshot {
     }
 
     /**
-     * Builds a snapshot with a {@link IMenuHolder}.
+     * Builds a snapshot with a {@link MenuHolder}.
      *
      * @param inputLeft  The first item.
      * @param inputRight The second item.
      * @param output     The output item.
      * @param anvil      The {@link AnvilView} of the provided inventory.
-     * @param holder     The {@link IMenuHolder} for the AnvilGUI.
+     * @param holder     The {@link MenuHolder} for the AnvilGUI.
      */
-    public Snapshot(ItemStack inputLeft, ItemStack inputRight, ItemStack output, AnvilView anvil, IMenuHolder holder) {
+    public Snapshot(ItemStack inputLeft, ItemStack inputRight, ItemStack output, AnvilView anvil, MenuHolder holder) {
         this.inputLeft = inputLeft;
         this.inputRight = inputRight;
         this.output = output;
         this.anvil = anvil;
         this.player = null;
         this.holder = holder;
+    }
+
+    /**
+     * Return the provided {@link ItemStack} if not null, otherwise return an ItemStack with {@link Material#AIR}.
+     *
+     * @param itemStack The {@link ItemStack} to check for nullity.
+     * @return Always returns an {@link ItemStack}, if the provided ItemStack is null the material will be {@link Material#AIR}
+     */
+    @Contract("null -> new; !null -> param1")
+    private static @NotNull ItemStack returnItemOrDefault(final ItemStack itemStack) {
+        return itemStack == null ? new ItemStack(Material.AIR) : itemStack;
+    }
+
+    /**
+     * Builds a {@link Snapshot} from a fully built {@link AnvilGUI}.
+     *
+     * @param gui The {@link AnvilGUI} instance to build a snapshot from.
+     * @return Returns a {@link Snapshot}.
+     */
+    @Contract("_ -> new")
+    static @NotNull Snapshot fromBuilt(final @NotNull AnvilGUI gui) {
+        final Inventory inventory = gui.inventory();
+
+        if (gui.player() != null) {
+            return new Snapshot(returnItemOrDefault(inventory.getItem(Slot.INPUT_LEFT)), returnItemOrDefault(inventory.getItem(Slot.INPUT_RIGHT)), returnItemOrDefault(inventory.getItem(Slot.OUTPUT)), gui.view(), gui.player());
+        } else {
+            return new Snapshot(returnItemOrDefault(inventory.getItem(Slot.INPUT_LEFT)), returnItemOrDefault(inventory.getItem(Slot.INPUT_RIGHT)), returnItemOrDefault(inventory.getItem(Slot.OUTPUT)), gui.view(), gui.holder());
+        }
     }
 
     /**
