@@ -19,10 +19,9 @@ repositories {
 
 dependencies {
     compileOnly(libs.paper)
-
     compileOnly(project(":common"))
 
-    implementation(libs.bundles.common)
+    compileOnly(libs.bundles.common)
     annotationProcessor(libs.lombok)
 }
 

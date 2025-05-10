@@ -3,8 +3,8 @@ package com.itsschatten.yggdrasil.menus.buttons.impl;
 import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.MenuTriggerButton;
-import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import lombok.Builder;
 import org.bukkit.event.inventory.ClickType;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +15,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 @Builder(builderClassName = "Builder")
-public class MenuTriggerButtonImpl extends MenuTriggerButton {
+public class MenuTriggerButtonImpl<T extends MenuHolder> extends MenuTriggerButton<T> {
 
     final @NotNull InventoryPosition position;
     final @Nullable Collection<InventoryPosition> positions;
@@ -24,12 +24,12 @@ public class MenuTriggerButtonImpl extends MenuTriggerButton {
 
     final @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item;
 
-    final @NotNull BiFunction<IMenuHolder, ClickType, Menu> menu;
+    final @NotNull BiFunction<T, ClickType, Menu<T>> menu;
 
     public MenuTriggerButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions,
                                  @Nullable String permission,
                                  @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item,
-                                 @NotNull BiFunction<IMenuHolder, ClickType, Menu> menu) {
+                                 @NotNull BiFunction<T, ClickType, Menu<T>> menu) {
         this.position = position;
         this.positions = positions;
         this.permission = permission;
@@ -43,7 +43,7 @@ public class MenuTriggerButtonImpl extends MenuTriggerButton {
     }
 
     @Override
-    public Menu getMenu(IMenuHolder user, ClickType click) {
+    public Menu<T> getMenu(T user, ClickType click) {
         return this.menu.apply(user, click);
     }
 
@@ -62,14 +62,14 @@ public class MenuTriggerButtonImpl extends MenuTriggerButton {
         return this.positions;
     }
 
-    public static class Builder {
+    public static class Builder<T extends MenuHolder> {
 
-        public Builder position(InventoryPosition position) {
+        public Builder<T> position(InventoryPosition position) {
             this.position = position;
             return this;
         }
 
-        public Builder position(int row, int column) {
+        public Builder<T> position(int row, int column) {
             return this.position(InventoryPosition.of(row, column));
         }
 

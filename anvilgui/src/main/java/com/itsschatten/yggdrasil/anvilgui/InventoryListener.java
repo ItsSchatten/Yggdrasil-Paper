@@ -19,6 +19,7 @@ import java.util.function.Consumer;
  */
 public final class InventoryListener implements Listener {
 
+    // If the handler is currently being run, used to ensure it isn't run multiple times.
     private boolean handlerRunning = false;
 
     @EventHandler
@@ -30,6 +31,7 @@ public final class InventoryListener implements Listener {
         final AnvilGUI gui = AnvilGUI.OPEN_ANVILS().get(event.getInventory());
 
         final int rawSlot = event.getRawSlot();
+        // Not an invalid slot.
         if (rawSlot != -999) {
             final Player clicker = (Player) event.getWhoClicked();
             final Inventory clickedInventory = event.getClickedInventory();
@@ -100,6 +102,7 @@ public final class InventoryListener implements Listener {
 
         final AnvilGUI gui = AnvilGUI.OPEN_ANVILS().get(event.getInventory());
 
+        // Limit dragging to only slots that can be interacted with.
         for (int slot : Slot.values()) {
             if (event.getRawSlots().contains(slot)) {
                 event.setCancelled(gui.interactableSlots().contains(slot));

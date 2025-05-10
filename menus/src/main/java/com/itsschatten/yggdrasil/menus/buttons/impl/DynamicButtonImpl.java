@@ -3,8 +3,8 @@ package com.itsschatten.yggdrasil.menus.buttons.impl;
 import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.DynamicButton;
-import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.MenuRunnable;
 import lombok.Builder;
 import org.bukkit.event.inventory.ClickType;
@@ -12,13 +12,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.function.Supplier;
 
 @Builder(builderClassName = "Builder")
-public class DynamicButtonImpl extends DynamicButton {
+public class DynamicButtonImpl<T extends MenuHolder> extends DynamicButton<T> {
 
     final @NotNull InventoryPosition position;
-    final @Nullable Collection<InventoryPosition> positions;
+    final @Nullable Set<InventoryPosition> positions;
 
     final @Nullable String permission;
 
@@ -27,13 +28,13 @@ public class DynamicButtonImpl extends DynamicButton {
 
     final int updateTime;
 
-    final @Nullable MenuRunnable onClick;
+    final @Nullable MenuRunnable<T> onClick;
 
-    public DynamicButtonImpl(@NotNull InventoryPosition position, @Nullable Collection<InventoryPosition> positions,
+    public DynamicButtonImpl(@NotNull InventoryPosition position, @Nullable Set<InventoryPosition> positions,
                              @Nullable String permission,
                              @NotNull Supplier<ItemCreator.ItemCreatorBuilder> item,
                              @Nullable Supplier<ItemCreator.ItemCreatorBuilder> update,
-                             int updateTime, @Nullable MenuRunnable onClick) {
+                             int updateTime, @Nullable MenuRunnable<T> onClick) {
         this.position = position;
         this.positions = positions;
         this.permission = permission;
@@ -69,7 +70,7 @@ public class DynamicButtonImpl extends DynamicButton {
     }
 
     @Override
-    public void onClicked(IMenuHolder user, Menu menu, ClickType click) {
+    public void onClicked(T user, Menu<T> menu, ClickType click) {
         if (this.onClick != null) {
             this.onClick.run(user, menu, click);
         }
@@ -80,14 +81,14 @@ public class DynamicButtonImpl extends DynamicButton {
         return this.update == null ? super.updateStack() : this.update.get().build();
     }
 
-    public static class Builder {
+    public static class Builder<T extends MenuHolder> {
 
-        public Builder position(InventoryPosition position) {
+        public Builder<T> position(InventoryPosition position) {
             this.position = position;
             return this;
         }
 
-        public Builder position(int row, int column) {
+        public Builder<T> position(int row, int column) {
             return this.position(InventoryPosition.of(row, column));
         }
     }

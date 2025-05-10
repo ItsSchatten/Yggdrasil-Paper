@@ -4,8 +4,8 @@ import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
 import com.itsschatten.yggdrasil.menus.types.PageMenu;
-import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.MenuRunnable;
 import org.apache.commons.lang3.Validate;
 import org.bukkit.event.inventory.ClickType;
@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 
 @ApiStatus.Internal
 @ApiStatus.NonExtendable
-public final class PageNavigationButtonImpl extends Button {
+public final class PageNavigationButtonImpl<T extends MenuHolder> extends Button<T> {
 
     /**
      * The builder of for this button item.
@@ -37,9 +37,9 @@ public final class PageNavigationButtonImpl extends Button {
     /**
      * A runnable that can be executed on the menu, run before switching pages.
      */
-    private final MenuRunnable runnable;
+    private final MenuRunnable<T> runnable;
 
-    public PageNavigationButtonImpl(@NotNull Supplier<ItemCreator.ItemCreatorBuilder> item, int pageNumber, InventoryPosition position, MenuRunnable runnable) {
+    public PageNavigationButtonImpl(@NotNull Supplier<ItemCreator.ItemCreatorBuilder> item, int pageNumber, InventoryPosition position, MenuRunnable<T> runnable) {
         this.item = item;
         this.pageNumber = pageNumber;
         this.position = position;
@@ -70,14 +70,14 @@ public final class PageNavigationButtonImpl extends Button {
     /**
      * {@inheritDoc}
      *
-     * @param user  The {@link IMenuHolder} that clicked this button.
+     * @param user  The {@link T} that clicked this button.
      * @param menu  The {@link Menu} that this button was clicked in.
      * @param click The {@link ClickType} that was used to click this button.
      */
     @Override
-    public void onClicked(final IMenuHolder user, final Menu menu, final ClickType click) {
+    public void onClicked(final T user, final Menu<T> menu, final ClickType click) {
         Validate.isTrue(pageNumber > 0, "A page number cannot be 0 or less!");
-        if (menu instanceof PageMenu pageMenu) {
+        if (menu instanceof PageMenu<T> pageMenu) {
             if (runnable != null && pageMenu.viewedPage() != pageNumber) runnable.run(user, menu, click);
             pageMenu.switchPage(pageNumber);
         }

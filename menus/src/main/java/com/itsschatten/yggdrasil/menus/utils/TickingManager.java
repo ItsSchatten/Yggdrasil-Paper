@@ -28,7 +28,7 @@ public final class TickingManager {
     @Getter
     @Accessors(fluent = true)
     @NotNull
-    private static final Set<Menu> TICKING_MENUS = new HashSet<>();
+    private static final Set<Menu<? extends MenuHolder>> TICKING_MENUS = new HashSet<>();
 
     /**
      * The id of the task responsible for ticking all menus.
@@ -41,7 +41,7 @@ public final class TickingManager {
      * @param menu The menu to add.
      * @return <code>true</code> if successful, <code>false</code> if otherwise.
      */
-    public static boolean add(final Menu menu) {
+    public static boolean add(final Menu<? extends MenuHolder> menu) {
         Validate.isTrue(menu instanceof Ticking, "To tick a menu it must implement the Ticking interface.");
         return TICKING_MENUS.add(menu);
     }
@@ -75,7 +75,7 @@ public final class TickingManager {
      *
      * @param menu The Menu to cancel.
      */
-    public static void cancel(final Menu menu) {
+    public static void cancel(final Menu<? extends MenuHolder> menu) {
         TICKING_MENUS.remove(menu);
     }
 

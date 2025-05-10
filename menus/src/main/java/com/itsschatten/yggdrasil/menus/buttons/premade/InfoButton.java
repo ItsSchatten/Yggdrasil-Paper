@@ -5,6 +5,7 @@ import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
 import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.items.ItemOptions;
 import com.itsschatten.yggdrasil.items.MetaManipulator;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import lombok.Builder;
 import lombok.Singular;
 import org.bukkit.Material;
@@ -18,7 +19,7 @@ import java.util.List;
  * The info button.
  */
 @Builder
-public final class InfoButton extends SimpleButton {
+public final class InfoButton<T extends MenuHolder> extends SimpleButton<T> {
 
     /**
      * The lore to apply to the button.
@@ -74,14 +75,14 @@ public final class InfoButton extends SimpleButton {
         return ItemCreator.builder().material(material).display(name).lore(lore).options(options).manipulators(manipulators).build();
     }
 
-    public static class InfoButtonBuilder {
+    public static class InfoButtonBuilder<T extends MenuHolder> {
 
-        public InfoButtonBuilder position(final InventoryPosition position) {
+        public InfoButtonBuilder<T> position(final InventoryPosition position) {
             this.position = position;
             return this;
         }
 
-        public InfoButtonBuilder position(final int row, final int column) {
+        public InfoButtonBuilder<T> position(final int row, final int column) {
             return position(InventoryPosition.of(row, column));
         }
 

@@ -6,7 +6,10 @@ import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.AnimatedButton;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
 import com.itsschatten.yggdrasil.menus.buttons.premade.NavigationButton;
-import com.itsschatten.yggdrasil.menus.utils.*;
+import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
+import com.itsschatten.yggdrasil.menus.utils.PaginateMenu;
+import com.itsschatten.yggdrasil.menus.utils.ReschedulableTask;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;
@@ -25,29 +28,32 @@ import java.util.*;
  *
  * @param <T> The object that is being paged.
  */
-public abstract class PaginatedMenu<T> extends StandardMenu {
+public abstract class PaginatedMenu<T extends MenuHolder, V> extends StandardMenu<T> {
 
     /**
      * The list of things to be paginated.
      */
-    private final List<T> allItems;
+    private final List<V> all;
 
     /**
      * Should the items be placed in the center of the menu? (Not in the borders.)
      */
     private final boolean center;
+
     /**
      * Stores all page buttons, this is modeled EXACTLY like normal menu buttons.
      *
      * @see Menu
      */
-    private final List<Button> registeredPageButtons = new ArrayList<>();
+    private final List<Button<T>> registeredPageButtons = new ArrayList<>();
+
     /**
      * The pages for this menu.
      *
      * @see PaginateMenu
      */
-    private Map<Integer, List<T>> pages;
+    private Map<Integer, List<V>> pages;
+
     /**
      * Should we add the page counting item?
      */
@@ -75,9 +81,9 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param pages  The List of items we want to page for this menu.
      * @param center Should we center the items in the middle of the inventory?
      */
-    public PaginatedMenu(final Menu parent, List<T> pages, boolean center) {
-        super(parent);
-        this.allItems = new ArrayList<>(pages);
+    public PaginatedMenu(final Menu<T> parent, String title, int size, List<V> pages, boolean center) {
+        super(parent, title, size);
+        this.all = new ArrayList<>(pages);
         this.center = center;
     }
 
@@ -87,9 +93,9 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param parent The parent of this menu.
      * @param pages  The List of items we want to page for this menu.
      */
-    public PaginatedMenu(final Menu parent, List<T> pages) {
-        super(parent);
-        this.allItems = new ArrayList<>(pages);
+    public PaginatedMenu(final Menu<T> parent, String title, int size, List<V> pages) {
+        super(parent, title, size);
+        this.all = new ArrayList<>(pages);
         this.center = false;
     }
 
@@ -100,9 +106,9 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param pages  The List of items we want to page for this menu.
      * @param center Should we center the items in the middle of the inventory?
      */
-    public PaginatedMenu(final Menu parent, @NotNull Collection<T> pages, boolean center) {
-        super(parent);
-        this.allItems = new ArrayList<>(pages);
+    public PaginatedMenu(final Menu<T> parent, String title, int size, @NotNull Collection<V> pages, boolean center) {
+        super(parent, title, size);
+        this.all = new ArrayList<>(pages);
         this.center = center;
     }
 
@@ -112,9 +118,9 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param parent The parent of this menu.
      * @param pages  The List of items we want to page for this menu.
      */
-    public PaginatedMenu(final Menu parent, @NotNull Collection<T> pages) {
-        super(parent);
-        this.allItems = new ArrayList<>(pages);
+    public PaginatedMenu(final Menu<T> parent, String title, int size, @NotNull Collection<V> pages) {
+        super(parent, title, size);
+        this.all = new ArrayList<>(pages);
         this.center = false;
     }
 
@@ -124,12 +130,27 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param buttons The array of {@link Button buttons} to register.
      * @see Menu#registerButtons(Button...)
      */
-    public final void registerPageButtons(final Button @NotNull ... buttons) {
-        for (final Button button : buttons) {
+    @SafeVarargs
+    public final void registerPageButtons(final Button<T> @NotNull ... buttons) {
+        for (final Button<T> button : buttons) {
             if (!registerPageButton(button)) {
                 Utils.logWarning("Failed to register a page button: " + button);
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param position The position to check.
+     * @return Returns {@code true} if, and only if, a {@link Button} was found to be in the same position as the one provided.
+     */
+    @Override
+    public boolean isSlotTakenByButton(InventoryPosition position) {
+        return registeredPageButtons.stream()
+                .filter(button -> button.getPermission() != null && !holder().hasPermission(button.getPermission()))
+                .anyMatch((button) -> button.getPosition().equals(position))
+                || super.isSlotTakenByButton(position);
     }
 
     /**
@@ -138,7 +159,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param button The {@link Button} to register.
      * @return <code>true</code> if the button was successfully registered, <code>false</code> if it failed, or it was already registered.
      */
-    private boolean registerPageButton(Button button) {
+    private boolean registerPageButton(Button<T> button) {
         // We return false if the EXACT button has already been registered.
         if (registeredPageButtons.contains(button)) {
             return false;
@@ -147,7 +168,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
         registeredPageButtons.add(button);
 
         // If a button is animated, we want to register a task.
-        if (button instanceof final AnimatedButton animatedButton) {
+        if (button instanceof final AnimatedButton<T> animatedButton) {
             final ReschedulableTask task = new ReschedulableTask(animatedButton.getUpdateTime(), ReschedulableTask.Type.BUTTON) {
                 @Override
                 public void run() {
@@ -157,21 +178,23 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
 
             registerTask(task);
         }
+
         return true;
     }
 
     /**
      * Gets a button from all registered buttons.
      *
-     * @param stack The stack we should look for a button.
+     * @param stack    The stack we should look for a button.
+     * @param position The clicked position.
      * @return A {@link Button} should one exist.
-     * @see Menu#getButton(ItemStack)
+     * @see Menu#getButton(ItemStack, InventoryPosition)
      */
     @Nullable
-    public final Button getPageButton(final ItemStack stack) {
+    public final Button<T> getPageButton(final ItemStack stack, InventoryPosition position) {
         if (stack == null) return null;
 
-        return getButtonImpl(stack, registeredPageButtons);
+        return getButtonImpl(stack, position, registeredPageButtons);
     }
 
     /**
@@ -179,9 +202,9 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      *
      * @param list The list that should be set as this Menu's.
      */
-    public final void onlyUpdatePages(final Collection<T> list) {
-        this.allItems.clear();
-        this.allItems.addAll(list);
+    public final void onlyUpdatePages(final Collection<V> list) {
+        this.all.clear();
+        this.all.addAll(list);
 
         // We force the player back to page one to avoid any issues determining the item we are clicking.
         // This also has the convenient side effect of never showing a null page if the data fails to
@@ -190,7 +213,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
         this.page = 1;
         if (this.pages != null) {
             this.pages.clear();
-            this.pages = PaginateMenu.page(getUsableFromSize(getSize()), this.allItems);
+            this.pages = PaginateMenu.page(getUsableFromSize(getSize()), this.all);
         }
     }
 
@@ -215,7 +238,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      *
      * @param list The list that should be set as this Menu's.
      */
-    public final void updatePages(final Collection<T> list) {
+    public final void updatePages(final Collection<V> list) {
         onlyUpdatePages(list);
 
         // We clear the registered normal buttons, so when we refresh, the buttons may be re-registered if required.
@@ -230,7 +253,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      *
      * @param list The list that should be set as this Menu's.
      */
-    public final void cleanUpdatePages(final Collection<T> list) {
+    public final void cleanUpdatePages(final Collection<V> list) {
         onlyUpdatePages(list);
         refreshPage();
     }
@@ -243,25 +266,32 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
         if (center) {
             // Clear the middle slots.
             for (int i = 0; i < usable; i++) {
-                if (isSlotTakenByPageButton(InventoryPosition.MIDDLE_POSITIONS.get(i))) {
-                    forceSet(InventoryPosition.MIDDLE_POSITIONS.get(i), new ItemStack(Material.AIR));
-                }
+                forceSet(InventoryPosition.MIDDLE_POSITIONS.get(i), new ItemStack(Material.AIR));
             }
         } else {
             // Replace all placeable positions with air.
             if (getPlaceablePositions() != null && !getPlaceablePositions().isEmpty()) {
                 for (int i = 0; i < usable; i++) {
-                    if (isSlotTakenByPageButton(getPlaceablePositions().get(i))) {
-                        forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
-                    }
+                    forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
                 }
             } else {
                 for (int i = 0; i < usable; i++) {
-                    if (isSlotTakenByPageButton(InventoryPosition.fromSlot(i))) {
-                        forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
-                    }
+                    forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
                 }
             }
+        }
+
+        // Clear the next and counter buttons.
+        if (getNextButton() != null) {
+            forceSet(getNextButton().build().getPosition(), new ItemStack(Material.AIR));
+        }
+
+        if (getPreviousButton() != null) {
+            forceSet(getPreviousButton().build().getPosition(), new ItemStack(Material.AIR));
+        }
+
+        if (getCounterButton() != null) {
+            forceSet(getCounterButton().build().getPosition(), new ItemStack(Material.AIR));
         }
     }
 
@@ -315,16 +345,16 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param placeablePositions The positions that could be placed.
      * @return Returns a new {@link Button}.
      */
-    private @NotNull Button makeButton(int iteration, final List<InventoryPosition> placeablePositions) {
-        final T obj = getValues().get(iteration);
-        return new Button() {
+    private @NotNull Button<T> makeButton(int iteration, final List<InventoryPosition> placeablePositions) {
+        final V obj = getValues().get(iteration);
+        return new Button<>() {
             @Override
             public ItemCreator createItem() {
                 return convertToStack(obj);
             }
 
             @Override
-            public void onClicked(final IMenuHolder user, final Menu menu, final ClickType click) {
+            public void onClicked(T user, Menu<T> menu, ClickType click) {
                 onClickPageItem(user, obj, click);
             }
 
@@ -341,16 +371,16 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param iteration The iteration we are on.
      * @return Returns a new {@link Button}.
      */
-    private @NotNull Button makeButtonCalculated(int iteration) {
-        final T obj = getValues().get(iteration);
-        return new Button() {
+    private @NotNull Button<T> makeButtonCalculated(int iteration) {
+        final V obj = getValues().get(iteration);
+        return new Button<>() {
             @Override
             public ItemCreator createItem() {
                 return convertToStack(obj);
             }
 
             @Override
-            public void onClicked(final IMenuHolder user, final Menu menu, final ClickType click) {
+            public void onClicked(final T user, final Menu<T> menu, final ClickType click) {
                 onClickPageItem(user, obj, click);
             }
 
@@ -366,17 +396,15 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public @NotNull MenuInventory formInventory() {
+    public void formInventory() {
         // Do pages first, that way we can still access them in all methods.
-        this.pages = PaginateMenu.page(getUsableFromSize(getSize()), allItems);
+        this.pages = PaginateMenu.page(getUsableFromSize(getSize()), all);
 
-        final MenuInventory inv = super.formInventory();
+        super.formInventory();
 
         initializePage();
         updateTitleAndButtons();
         drawListOfButtons(registeredPageButtons);
-        return inv;
     }
 
     /**
@@ -427,7 +455,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param object The object.
      * @return An {@link ItemCreator} instance.
      */
-    public abstract ItemCreator convertToStack(T object);
+    public abstract ItemCreator convertToStack(V object);
 
     /**
      * What should happen when we click on a page object.
@@ -436,7 +464,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param object The object clicked.
      * @param click  The click type for this click.
      */
-    public abstract void onClickPageItem(final IMenuHolder user, final T object, ClickType click);
+    public abstract void onClickPageItem(final T user, final V object, ClickType click);
 
     /**
      * {@inheritDoc}
@@ -447,9 +475,9 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param clicked  What item was clicked?
      */
     @Override
-    public void onClick(@NotNull IMenuHolder user, @NotNull InventoryPosition position, ClickType click, ItemStack clicked) {
+    public void onClick(@NotNull T user, @NotNull InventoryPosition position, ClickType click, ItemStack clicked) {
         // Ignore outside clicks.
-        if (user.getBase().getOpenInventory().getSlotType(position.getEffectiveSlot()) == InventoryType.SlotType.OUTSIDE)
+        if (user.player().getOpenInventory().getSlotType(position.getEffectiveSlot()) == InventoryType.SlotType.OUTSIDE)
             return;
 
         // We are using center positions.
@@ -465,7 +493,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
             }
 
             // Get the value and if it isn't null, go ahead and call the click.
-            final T object = getValues().get(InventoryPosition.MIDDLE_POSITIONS.indexOf(position) - 1);
+            final V object = getValues().get(InventoryPosition.MIDDLE_POSITIONS.indexOf(position) - 1);
             if (object != null) {
                 onClickPageItem(user, object, click);
             }
@@ -483,7 +511,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
                 }
 
                 // Get the value and if it isn't null, go ahead and call the click.
-                final T object = getValues().get(getPlaceablePositions().indexOf(position));
+                final V object = getValues().get(getPlaceablePositions().indexOf(position));
                 if (object != null) {
                     onClickPageItem(user, object, click);
                 }
@@ -493,32 +521,12 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
             // Ensure we aren't over the value size.
             if (position.getEffectiveSlot() < getValues().size()) {
                 // Get the value and if it isn't null, go ahead and call the click.
-                final T object = getValues().get(position.getEffectiveSlot());
+                final V object = getValues().get(position.getEffectiveSlot());
                 if (object != null) {
                     onClickPageItem(user, object, click);
                 }
             }
         }
-    }
-
-    /**
-     * Check to see if there provided {@link InventoryPosition} is taken by a page button.
-     * <br>
-     * Modeled after {@link Menu#isSlotTakenByButton(InventoryPosition)}
-     *
-     * @param position The position to check.
-     * @return <code>true</code> if the position is occupied by a registered button.
-     * @see Menu#isSlotTakenByButton(InventoryPosition)
-     */
-    public boolean isSlotTakenByPageButton(InventoryPosition position) {
-        // Loop registered page buttons and check if the position is taken.
-        for (final Button button : this.registeredPageButtons) {
-            // Check if we have permission for the button to appear.
-            if (button.getPermission() != null && !viewer.getBase().hasPermission(button.getPermission()))
-                continue;
-            if (button.getPosition().equals(position)) return true;
-        }
-        return false;
     }
 
     /**
@@ -547,8 +555,8 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @see NavigationButton#builder()
      */
     @Nullable
-    public NavigationButton.NavigationButtonBuilder getCounterButton() {
-        return NavigationButton.builder()
+    public NavigationButton.NavigationButtonBuilder<T> getCounterButton() {
+        return NavigationButton.<T>builder()
                 .material(Material.NAME_TAG)
                 .name(getCounterString())
                 .lore(pages.size() > 1 ? List.of("Click me to be sent back to the first page.", "Or right click to be sent to the last page!") : List.of())
@@ -562,7 +570,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
                     this.page = 1;
                     refreshPage();
                 })
-                .position(InventoryPosition.of(getInventory().getRows() - 1, 4));
+                .position(InventoryPosition.of(rows() - 1, 4));
     }
 
     /**
@@ -572,8 +580,8 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @see NavigationButton#builder()
      */
     @Nullable
-    public NavigationButton.NavigationButtonBuilder getNextButton() {
-        return NavigationButton.builder()
+    public NavigationButton.NavigationButtonBuilder<T> getNextButton() {
+        return NavigationButton.<T>builder()
                 .material(Material.ARROW)
                 .name("<yellow>Next >")
                 .runnable((user, menu, type) -> {
@@ -583,10 +591,10 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
                         clearPage();
                         forceDrawPage();
                     } else {
-                        menu.getViewer().tell("<red>You cannot go forward any further!");
+                        menu.holder().tell("<red>You cannot go forward any further!");
                     }
                 })
-                .position(InventoryPosition.of(getInventory().getRows() - 1, 5));
+                .position(InventoryPosition.of(rows() - 1, 5));
     }
 
     /**
@@ -596,8 +604,8 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @see NavigationButton#builder()
      */
     @Nullable
-    public NavigationButton.NavigationButtonBuilder getPreviousButton() {
-        return NavigationButton.builder()
+    public NavigationButton.NavigationButtonBuilder<T> getPreviousButton() {
+        return NavigationButton.<T>builder()
                 .material(Material.ARROW)
                 .name("<yellow>< Previous")
                 .runnable((user, menu, type) -> {
@@ -607,10 +615,10 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
                         clearPage();
                         forceDrawPage();
                     } else {
-                        menu.getViewer().tell("<red>You cannot go backwards any further!");
+                        menu.holder().tell("<red>You cannot go backwards any further!");
                     }
                 })
-                .position(InventoryPosition.of(getInventory().getRows() - 1, 3));
+                .position(InventoryPosition.of(rows() - 1, 3));
     }
 
     /**
@@ -655,9 +663,9 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      *
      * @param objects The list of objects to re-populate the menu with.
      */
-    public final void reInit(final Collection<T> objects) {
-        this.allItems.clear();
-        this.allItems.addAll(objects);
+    public final void reInit(final Collection<V> objects) {
+        this.all.clear();
+        this.all.addAll(objects);
         this.page = 1;
         refresh();
     }
@@ -668,7 +676,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      * @param objects The list of objects to re-populate the menu with.
      * @param delay   How long before re-init.
      */
-    public final void reInit(Collection<T> objects, long delay) {
+    public final void reInit(Collection<V> objects, long delay) {
         Bukkit.getScheduler().runTaskLater(Utils.getInstance(), () -> reInit(objects), delay);
     }
 
@@ -679,7 +687,7 @@ public abstract class PaginatedMenu<T> extends StandardMenu {
      */
     @NotNull
     @Unmodifiable
-    public final List<T> getValues() {
+    public final List<V> getValues() {
         if (this.page == 0 || this.pages == null || this.pages.isEmpty()) return Collections.emptyList();
         org.apache.commons.lang3.Validate.isTrue(this.pages.containsKey(this.page - 1), "Menu " + this.getClass().getSimpleName() + " does not contain page #" + (this.page - 1));
 

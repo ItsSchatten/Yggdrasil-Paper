@@ -2,7 +2,6 @@ package com.itsschatten.yggdrasil.menus;
 
 import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.menus.buttons.AnimatedButton;
-import com.itsschatten.yggdrasil.menus.buttons.AnimatedSimpleButton;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
 import com.itsschatten.yggdrasil.menus.buttons.DynamicButton;
 import com.itsschatten.yggdrasil.menus.types.PaginatedMenu;
@@ -10,7 +9,6 @@ import com.itsschatten.yggdrasil.menus.types.interfaces.Animated;
 import com.itsschatten.yggdrasil.menus.types.interfaces.Ticking;
 import com.itsschatten.yggdrasil.menus.utils.*;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bukkit.Bukkit;
 import org.bukkit.event.inventory.ClickType;
@@ -19,41 +17,29 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.*;
 
 /**
- * The main menu class, you probably shouldn't extend this class,
+ * The main menu class, you shouldn't extend this class,
  * instead look at some of the {@link com.itsschatten.yggdrasil.menus.types menu types}.
+ *
+ * @see InventorySize
  */
 @ApiStatus.NonExtendable
-public abstract class Menu extends AbstractMenuInventory {
-
-    /**
-     * Constant to get a player's current menu.
-     */
-    public static final String CURRENT_TAG = "current_menu";
-
-    /**
-     * Constant to get a player's previous menu.
-     */
-    public static final String PREVIOUS_TAG = "previous_menu";
-
-    /**
-     * Constant to get a player's viewed menu.
-     */
-    public static final String VIEWED_TAG = "viewed_menu";
+public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
 
     /**
      * All registered buttons for this menu.
      */
-    private final List<Button> registeredButtons = new ArrayList<>();
+    private final List<Button<T>> buttons = new ArrayList<>();
 
     /**
      * All tasks for this menu.
      */
     @Getter
-    private final Set<ReschedulableTask> reschedulableTasks = new HashSet<>();
+    private final Set<ReschedulableTask> tasks = new HashSet<>();
 
     /**
      * Utility to ensure a runnable has been run once.
@@ -61,71 +47,31 @@ public abstract class Menu extends AbstractMenuInventory {
     @NotNull
     private final OneTimeRunnable register;
 
-    /**
-     * The {@link IMenuHolder} of this inventory.
-     * --- GETTER ---
-     * Get the viewer of this menu, shouldn't be {@code null}.
-     *
-     * @return Returns the {@link IMenuHolder viewer} of this menu.
-     * --- SETTER ---
-     * Set the viewer of this menu.
-     * @param viewer The {@link IMenuHolder} to set as the viewer.
-     */
-    @Getter
+   /* @Getter
     @Setter
-    protected IMenuHolder viewer;
+    @Accessors(fluent = true)
+    protected T holder;*/
 
-    /**
-     * The secondary viewers to this menu.
-     * <br>
-     * <b>This DOES NOT contain the main viewer of this inventory.</b>
-     * --- GETTER ---
-     * Get the {@link IMenuHolder viewers} of this menu.
-     *
-     * @return Returns a {@link HashSet} of {@link IMenuHolder}s which does not contain the main {@link #viewer} of this menu.
-     */
-    @Getter
-    protected Set<IMenuHolder> viewers = new HashSet<>();
-
-    /**
-     * If we are going to open a new Menu instead of closing out of it entirely.
-     * --- GETTER ---
-     *
-     * @return Returns if this menu is opening new.
-     */
-    @Getter
-    private boolean isOpeningNew = false;
-
-    /**
-     * Has this menu been registered?
-     * --- GETTER ---
-     *
-     * @return Returns if this menu has been registered.
-     */
     @Getter
     @Accessors(fluent = true)
-    private boolean hasRegistered;
-
-    /**
-     * Are we redrawing this menu?
-     * --- SETTER ---
-     * Set if we are redrawing this menu.
-     *
-     * @param redrawing the value.
-     * --- GETTER ---
-     * Get if this menu is being redrawn.
-     * @return Returns if this menu is being redrawn.
-     */
-    @Getter
-    @Setter
-    private boolean redrawing;
+    protected Set<T> viewers = new HashSet<>();
 
     /**
      * Default constructor.
      */
     @ApiStatus.Internal
-    public Menu() {
-        this.register = new OneTimeRunnable(() -> makeButtons());
+    public Menu(int size, String title) {
+        super(size, title);
+        this.register = new OneTimeRunnable(() -> registerButtons(makeButtons()));
+    }
+
+    /**
+     * Returns an unmodifiable list of all registered buttons for this menu.
+     *
+     * @return Returns an unmodifiable list of all {@link #buttons}.
+     */
+    public @UnmodifiableView List<Button<T>> buttons() {
+        return Collections.unmodifiableList(buttons);
     }
 
     /**
@@ -133,9 +79,10 @@ public abstract class Menu extends AbstractMenuInventory {
      *
      * @param buttons The array of {@link Button buttons} to register.
      */
-    public final void registerButtons(final Button @NotNull ... buttons) {
-        for (final Button button : buttons) {
-            if (!registerButton(button)) {
+    @SafeVarargs
+    public final void registerButtons(final Button<T> @NotNull ... buttons) {
+        for (final Button<T> button : buttons) {
+            if (registerButton(button)) {
                 Utils.logWarning("Failed to register a button: " + button);
                 if (Utils.isDebug()) {
                     Thread.dumpStack();
@@ -145,18 +92,34 @@ public abstract class Menu extends AbstractMenuInventory {
     }
 
     /**
+     * Register a Collection of {@link Button}
+     *
+     * @param buttons The buttons to register.
+     */
+    public final void registerButtons(final @NotNull Collection<Button<T>> buttons) {
+        buttons.forEach(button -> {
+            if (registerButton(button)) {
+                Utils.logWarning("Failed to register a button: " + button);
+                if (Utils.isDebug()) {
+                    Thread.dumpStack();
+                }
+            }
+        });
+    }
+
+    /**
      * Register a Button.
      *
      * @param button The {@link Button} to register.
-     * @return <code>true</code> if the button was successfully registered, <code>false</code> if it failed, or it was already registered.
+     * @return <code>true</code> if the button was unsuccessfully registered, <code>false</code> if it failed, or it was already registered.
      */
-    private boolean registerButton(Button button) {
-        if (registeredButtons.contains(button)) {
-            return false;
+    private boolean registerButton(Button<T> button) {
+        if (buttons.contains(button)) {
+            return true;
         }
 
-        registeredButtons.add(button);
-        if (button instanceof final AnimatedButton animatedButton) {
+        buttons.add(button);
+        if (button instanceof final AnimatedButton<T> animatedButton) {
             final ReschedulableTask task = new ReschedulableTask(animatedButton.getUpdateTime(), ReschedulableTask.Type.BUTTON) {
                 @Override
                 public void run() {
@@ -167,17 +130,7 @@ public abstract class Menu extends AbstractMenuInventory {
             registerTask(task);
         }
 
-        if (button instanceof final AnimatedSimpleButton animatedButton) {
-            final ReschedulableTask task = new ReschedulableTask(animatedButton.getUpdateTime(), ReschedulableTask.Type.BUTTON) {
-                @Override
-                public void run() {
-                    animatedButton.run(Menu.this);
-                }
-            };
-
-            registerTask(task);
-        }
-        return true;
+        return false;
     }
 
     /**
@@ -186,26 +139,8 @@ public abstract class Menu extends AbstractMenuInventory {
      * @param task The task to register.
      */
     protected final void registerTask(final ReschedulableTask task) {
-        reschedulableTasks.add(task);
+        tasks.add(task);
         task.register();
-    }
-
-    /**
-     * Is the potion provided taken by a button?
-     *
-     * @param position The position that we wish to check.
-     * @return <code>true</code> if a button is found in the provided position, <code>false</code> otherwise.
-     */
-    @Override
-    public final boolean isSlotTakenByButton(final InventoryPosition position) {
-        for (final Button button : this.registeredButtons) {
-            if (button.getPermission() != null && !viewer.getBase().hasPermission(button.getPermission()))
-                return false;
-
-            if (button.getPosition().equals(position) || (button.getPositions() != null && button.getPositions().contains(position)))
-                return true;
-        }
-        return false;
     }
 
     /**
@@ -214,15 +149,15 @@ public abstract class Menu extends AbstractMenuInventory {
     public final void refresh() {
         // We cancel all running button tasks because after this point they will point to nothing and will cause
         // unexpected behavior with buttons.
-        reschedulableTasks.forEach((task) -> {
+        tasks.forEach((task) -> {
             if (task.getType() == ReschedulableTask.Type.BUTTON) {
                 task.cancel();
             }
         });
 
         // We remove all button tasks here to prevent memory leaks.
-        reschedulableTasks.removeIf((task) -> task.getType() == ReschedulableTask.Type.BUTTON);
-        registeredButtons.clear();
+        tasks.removeIf((task) -> task.getType() == ReschedulableTask.Type.BUTTON);
+        buttons.clear();
 
         makeButtons();
         redraw();
@@ -232,27 +167,25 @@ public abstract class Menu extends AbstractMenuInventory {
      * Redraw the menu.
      */
     public final void redraw() {
-        setRedrawing(true);
-        setInventory(formInventory());
-
-        getInventory().display(viewer);
+        drawButtons();
+        displayTo(holder());
     }
 
     /**
      * Resets all registered buttons and re-registers declared buttons.
      */
     protected final void resetButtons() {
-        if (!registeredButtons.isEmpty()) {
+        if (!buttons.isEmpty()) {
             // Cancel all running button tasks.
-            reschedulableTasks.forEach((task) -> {
+            tasks.forEach((task) -> {
                 if (task.getType() == ReschedulableTask.Type.BUTTON) {
                     task.cancel();
                 }
             });
             // Remove all button tasks to help relieve memory.
-            reschedulableTasks.removeIf((task) -> task.getType() == ReschedulableTask.Type.BUTTON);
+            tasks.removeIf((task) -> task.getType() == ReschedulableTask.Type.BUTTON);
 
-            this.registeredButtons.clear();
+            this.buttons.clear();
             makeButtons();
         }
     }
@@ -261,7 +194,7 @@ public abstract class Menu extends AbstractMenuInventory {
      * Clears all registered buttons, mainly used in {@link PaginatedMenu}
      */
     protected final void clearButtons() {
-        this.registeredButtons.clear();
+        this.buttons.clear();
     }
 
     /**
@@ -269,14 +202,18 @@ public abstract class Menu extends AbstractMenuInventory {
      * <p>
      * It should be noted that {@link #registerButtons(Button...)} does need to be called to register the buttons.
      */
-    public void makeButtons() {
-    }
+    public abstract List<Button<T>> makeButtons();
+
+    /**
+     * Used in implementations of {@link Menu} to register 'dynamic' buttons and draw other items.
+     */
+    public abstract void formInventory();
 
     /**
      * Draws the buttons to the menu.
      */
     protected final void drawButtons() {
-        drawListOfButtons(registeredButtons);
+        drawListOfButtons(buttons);
     }
 
     /**
@@ -284,16 +221,16 @@ public abstract class Menu extends AbstractMenuInventory {
      *
      * @param toDraw A list of buttons to draw.
      */
-    protected final void drawListOfButtons(final @NotNull List<Button> toDraw) {
-        for (final Button button : toDraw) {
+    protected final void drawListOfButtons(final @NotNull List<Button<T>> toDraw) {
+        for (final Button<T> button : toDraw) {
             if (button.getPermission() != null) {
-                if (getViewer().getBase().hasPermission(button.getPermission())) {
+                if (holder().player().hasPermission(button.getPermission())) {
                     if (button.getPositions() != null && !button.getPositions().isEmpty()) {
                         for (final InventoryPosition position : button.getPositions()) {
-                            getInventory().forceSet(position, button);
+                            forceSet(position, button);
                         }
                     } else {
-                        getInventory().forceSet(button.getPosition(), button);
+                        forceSet(button.getPosition(), button);
                     }
                 }
                 continue;
@@ -301,51 +238,33 @@ public abstract class Menu extends AbstractMenuInventory {
 
             if (button.getPositions() != null && !button.getPositions().isEmpty()) {
                 for (final InventoryPosition position : button.getPositions()) {
-                    getInventory().forceSet(position, button);
+                    forceSet(position, button);
                 }
             } else {
-                getInventory().forceSet(button.getPosition(), button);
+                forceSet(button.getPosition(), button);
             }
         }
     }
 
     /**
-     * Quick method to open a menu.
-     *
-     * @param user The user to open the menu for.
-     * @see #displayTo(IMenuHolder, boolean)
-     */
-    public void displayTo(final IMenuHolder user) {
-        displayTo(user, false);
-    }
-
-    /**
      * Used to switch between menus, this method avoids calling the onClose for this method and removing the player's current menu.
      *
-     * @param user The user to switch this menu for.
-     * @param from The menu this switch is called from.
+     * @param holder The user to switch this menu for.
+     * @param from   The menu this switch is called from.
      */
-    public void switchMenu(final IMenuHolder user, final Menu from) {
-        if (from != null)
-            from.isOpeningNew = true;
-        displayTo(user);
+    public void switchMenu(final T holder, final Menu<T> from) {
+        displayTo(holder);
     }
 
     /**
      * Display's a menu to a user.
      *
-     * @param user  The user to show the menu too.
-     * @param force Should we force this menu to be opened if a player is in a conversation?
+     * @param user The user to show the menu too.
      */
-    public final void displayTo(final IMenuHolder user, final boolean force) {
-        setViewer(user);
-        register.attemptRun();
+    public final void displayTo(final T user) {
+        holder(user);
 
-        if (redrawing) {
-            makeButtons();
-        }
-
-        if (!hasRegistered) {
+        if (!register.hasBeenRun()) {
             if (this instanceof Ticking) {
                 TickingManager.add(this);
             }
@@ -363,24 +282,19 @@ public abstract class Menu extends AbstractMenuInventory {
                 }
             }
         } else {
-            if (!reschedulableTasks.isEmpty()) {
-                Bukkit.getScheduler().runTask(Utils.getInstance(), () -> reschedulableTasks.forEach(ReschedulableTask::restart));
+            registerButtons(makeButtons());
+            if (!tasks.isEmpty()) {
+                Bukkit.getScheduler().runTask(Utils.getInstance(), () -> tasks.forEach(ReschedulableTask::restart));
             }
         }
+        register.attemptRun();
 
-        hasRegistered = true;
-
-        if (!force && user.getBase().isConversing()) {
-            user.tell("<red>Please exit your conversation and try opening this menu again!");
-            return;
-        }
-        setInventory(formInventory());
-
-        Utils.debugLog("Display is called for " + getClass().getSimpleName() + ".");
-        getInventory().display(user);
+        Utils.debugLog("Display was called for " + getClass().getSimpleName() + ".");
+        formInventory();
         onOpen(user);
+        display(user);
         user.updateMenu(this);
-        postDisplay();
+        postDisplay(user);
     }
 
     /**
@@ -390,12 +304,8 @@ public abstract class Menu extends AbstractMenuInventory {
      *
      * @param user The user to show this menu to.
      */
-    public final void showTo(final IMenuHolder user) {
-        if (getInventory() == null) {
-            throw new UnsupportedOperationException("Cannot show a menu that has not already been displayed to a primary user.");
-        }
-
-        getInventory().show(user);
+    public final void showTo(final T user) {
+        show(user);
         user.setViewedMenu(this);
         viewers.add(user);
     }
@@ -403,22 +313,23 @@ public abstract class Menu extends AbstractMenuInventory {
     /**
      * Removes a viewer from the Menu, you cannot remove the main viewer of this Menu.
      *
-     * @param user A {@link IMenuHolder}
+     * @param user A {@link T}.
      */
-    public final void removeViewer(final IMenuHolder user) {
+    public final void removeViewer(final T user) {
         viewers.remove(user);
     }
 
     /**
      * Is this action allowed?
      *
+     * @param holder        The holder of this menu.
      * @param clickLocation The location of the click.
      * @param slot          The clicked slot number.
      * @param slotItem      The item clicked.
      * @param cursorItem    The item currently on the clicker's cursor.
      * @return Returning <code>false</code> will cancel the action, while <code>true</code> will allow the action.
      */
-    public boolean isAllowed(ClickLocation clickLocation, int slot, final ItemStack slotItem, final ItemStack cursorItem) {
+    public boolean isAllowed(T holder, ClickLocation clickLocation, int slot, final ItemStack slotItem, final ItemStack cursorItem) {
         return false;
     }
 
@@ -426,69 +337,58 @@ public abstract class Menu extends AbstractMenuInventory {
      * Cancel all button and menu animation tasks.
      */
     public final void cancelTasks() {
-        if (!isOpeningNew) {
-            reschedulableTasks.forEach(ReschedulableTask::cancel);
-        } else {
-            if (viewer.getPreviousMenu() == this) {
-                viewer.getPreviousMenu().isOpeningNew = false;
-                return;
-            }
-            if (viewer.getPreviousMenu() != null && viewer.getPreviousMenu() != this) {
-                viewer.getPreviousMenu().cancelTasks();
-            }
-
-            reschedulableTasks.forEach(ReschedulableTask::cancel);
-            isOpeningNew = false;
-        }
+        tasks.forEach(ReschedulableTask::cancel);
     }
 
     /**
      * What should happen when the menu is closed.
      *
-     * @param user The user that belongs to this menu.
+     * @param user The user that closed this menu.
      */
-    public void onClose(final IMenuHolder user) {
+    public void onClose(final T user) {
     }
 
     /**
      * What should happen when the menu is opened.
      *
-     * @param user The user that belongs to this menu.
+     * @param user The user that opened this menu.
      */
-    public void onOpen(final IMenuHolder user) {
+    public void onOpen(final T user) {
     }
 
     /**
      * What should happen after the menu has been displayed, all variables should be set for this menu at this point.
+     *
+     * @param user The user that closed this menu.
      */
-    public void postDisplay() {
+    public void postDisplay(T user) {
     }
 
     /**
      * What should happen before we return to the previous menu.
+     *
+     * @param user The user that closed this menu.
      */
-    public void beforeReturn() {
+    public void beforeReturn(T user) {
     }
 
     /**
      * Logic for when the user of this inventory clicks in their inventory.
      *
-     * @param event The {@link InventoryClickEvent} that called this method.
+     * @param event  The {@link InventoryClickEvent} that called this method.
+     * @param holder The {@link T}.
      */
-    public void onPlayerClick(final InventoryClickEvent event) {
+    public void onPlayerClick(T holder, final InventoryClickEvent event) {
     }
 
     /**
      * Gets a button from all registered buttons.
      *
-     * @param stack The stack we should look for a button.
+     * @param stack    The stack we should look for a button.
+     * @param position The position clicked.
      * @return A {@link Button} should one exist.
      */
-    public Button getButton(final ItemStack stack) {
-        if (stack == null) return null;
-
-        return getButtonImpl(stack, registeredButtons);
-    }
+    public abstract Button<T> getButton(final ItemStack stack, InventoryPosition position);
 
     /**
      * Method to get the button from an {@link ItemStack}
@@ -498,13 +398,13 @@ public abstract class Menu extends AbstractMenuInventory {
      * @return Returns the found {@link Button} or {@code null} if not found.
      */
     @ApiStatus.Internal
-    protected final @Nullable Button getButtonImpl(final ItemStack stack, final @NotNull List<Button> buttons) {
-        for (final Button registeredButton : buttons) {
+    protected final @Nullable Button<T> getButtonImpl(final ItemStack stack, final InventoryPosition position, final @NotNull List<Button<T>> buttons) {
+        for (final Button<T> registeredButton : buttons) {
             // Because Animated and Dynamic are switched in runtime, it's easier if we simply defer to known item type
             // so we don't have to constantly check the item over and over again.
             final ItemStack item = switch (registeredButton) {
-                case AnimatedButton animated -> animated.getInnerStack().ensureServerConversions();
-                case DynamicButton dynamicButton -> dynamicButton.getInnerStack().ensureServerConversions();
+                case AnimatedButton<T> animated -> animated.getInnerStack().ensureServerConversions();
+                case DynamicButton<T> dynamicButton -> dynamicButton.getInnerStack().ensureServerConversions();
                 default -> {
                     final ItemStack instance = registeredButton.getItem();
                     yield instance == null ? null : instance.ensureServerConversions();
@@ -516,10 +416,10 @@ public abstract class Menu extends AbstractMenuInventory {
 
             // Ensuring all conversions have taken place on the item,
             // we check if it is similar to the provided stack or exactly equal to it.
-            if (item.isSimilar(stack) || item.equals(stack)) {
+            if ((item.isSimilar(stack) || item.equals(stack)) && position.equals(registeredButton.getPosition())) {
                 if (registeredButton.getPermission() != null) {
-                    // We do have permissions, check if the main viewer of the menu has permission to click the button.
-                    if (!getViewer().getBase().hasPermission(registeredButton.getPermission()))
+                    // We do have permissions, check if the main holder of the menu has permission to click the button.
+                    if (!holder().hasPermission(registeredButton.getPermission()))
                         return null;
                 }
 
@@ -533,24 +433,12 @@ public abstract class Menu extends AbstractMenuInventory {
     /**
      * Called when clicking on the inventory.
      *
-     * @param user    The holder of this menu.
+     * @param holder  The holder of this menu.
      * @param slot    The slot clicked.
      * @param click   The click type for this click.
      * @param clicked What item was clicked.
      */
-    public void onClick(final IMenuHolder user, final InventoryPosition slot, final ClickType click, final ItemStack clicked) {
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Menu menu)) return false;
-        return isOpeningNew() == menu.isOpeningNew() && hasRegistered == menu.hasRegistered && isRedrawing() == menu.isRedrawing() && Objects.equals(registeredButtons, menu.registeredButtons) && Objects.equals(getReschedulableTasks(), menu.getReschedulableTasks()) && Objects.equals(register, menu.register) && Objects.equals(getViewer(), menu.getViewer()) && Objects.equals(getViewers(), menu.getViewers());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(registeredButtons, reschedulableTasks, register, getViewer(), getViewers(), isOpeningNew(), hasRegistered(), isRedrawing());
+    public void onClick(final T holder, final InventoryPosition slot, final ClickType click, final ItemStack clicked) {
     }
 
 }

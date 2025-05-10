@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
  * Represents a page in a {@link PageMenu}.
  */
 @Builder
-public record MenuPage(PageNavigationButton navButton, @Singular List<Button> buttons) {
+public record MenuPage<T extends MenuHolder>(PageNavigationButton navButton, @Singular List<Button<T>> buttons) {
 
-    public void register(final @NotNull PageMenu menu) {
+    public void register(final @NotNull PageMenu<T> menu) {
         if (menu.hasPreviousPage()) menu.clearPreviousPage();
 
         menu.registerPageButtons(buttons);

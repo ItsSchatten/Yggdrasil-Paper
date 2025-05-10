@@ -11,13 +11,13 @@ import com.itsschatten.yggdrasil.menus.types.interfaces.CheckDrag;
 import com.itsschatten.yggdrasil.menus.types.interfaces.NoDrag;
 import com.itsschatten.yggdrasil.menus.types.interfaces.Ticking;
 import com.itsschatten.yggdrasil.menus.types.interfaces.ViewerMaintained;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.*;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -28,40 +28,42 @@ import org.jetbrains.annotations.NotNull;
 public final class MenuListeners implements Listener {
 
     /**
+     * Called when the player leaves the server, used to remove the metadata 'menu_holder'.
+     * Removed here because MenuHolder stores a player.
+     *
+     * @param event The event.
+     */
+    @EventHandler
+    public void onPlayerLeave(final PlayerQuitEvent event) {
+        event.getPlayer().removeMetadata("menu_holder", Utils.getInstance());
+    }
+
+    /**
      * Called when a menu is closed, we ignore if the event is canceled and this method is called second to last.
      *
      * @param event The close event.
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void onMenuClose(final @NotNull InventoryCloseEvent event) {
+    public <T extends MenuHolder> void onMenuClose(final @NotNull InventoryCloseEvent event) {
         // If the HumanEntity that closes an Inventory is somehow not a player, ignore.
-        if (!(event.getPlayer() instanceof final Player player)) {
+        if (!(event.getPlayer() instanceof Player)) {
             return;
         }
 
-        if (event.getInventory().getHolder() instanceof MenuInventory) {
+        if (event.getInventory().getHolder() instanceof MenuInventory<? extends MenuHolder> inventory) {
             // MenuHolder "cast", used to update their active and previous menu.
-            final IMenuHolder user = MenuUtils.getManager().getMenuHolder(player.getUniqueId());
-            // If the user is null or their base is null, ignore.
-            if (user == null)
-                return;
+            final T user = (T) inventory.holder();
 
             if (user.getViewedMenu() != null) {
-                final Menu viewedMenu = user.getViewedMenu();
+                final Menu<T> viewedMenu = (Menu<T>) user.getViewedMenu();
                 viewedMenu.removeViewer(user);
                 user.removeViewedMenu();
             }
 
             // Get the holder's current menu.
-            final Menu menu = user.getCurrentMenu();
+            final Menu<T> menu = (Menu<T>) user.getCurrentMenu();
             // If their menu is not null.
             if (menu != null) {
-                // Check if the menu is being redrawn.
-                if (menu.isRedrawing()) {
-                    menu.setRedrawing(false);
-                    return;
-                }
-
                 if (menu instanceof Ticking) {
                     TickingManager.cancel(menu);
                 }
@@ -69,26 +71,15 @@ public final class MenuListeners implements Listener {
                 // Call onClose code.
                 menu.onClose(user);
 
-                // Close the animate title task.
-                if (menu.getInventory().getAnimateTask() != 0) {
-                    Bukkit.getScheduler().cancelTask(menu.getInventory().getAnimateTask());
-                    menu.getInventory().clearAnimateTask();
-                }
-
-                // If we aren't opening a new menu, remove their current menu.
-                if (!menu.isOpeningNew()) {
-                    user.removeCurrentMenu();
-                }
-
                 // Handle closing the menu for the viewer.
-                if (!menu.getViewers().isEmpty()) {
+                if (!menu.viewers().isEmpty()) {
                     if (!(menu instanceof ViewerMaintained maintain)) {
-                        menu.getViewers().forEach((viewer) -> {
-                            viewer.getBase().closeInventory(InventoryCloseEvent.Reason.CANT_USE);
+                        menu.viewers().forEach((viewer) -> {
+                            viewer.player().closeInventory(InventoryCloseEvent.Reason.CANT_USE);
                             viewer.tell("<red>The main viewer of the inventory you where viewing has closed the inventory!");
                         });
-                    } else if (maintain.notifyUsers()) {
-                        menu.getViewers().forEach((viewer) -> viewer.tell(maintain.message()));
+                    } else if (maintain.notifyViewers()) {
+                        menu.viewers().forEach((viewer) -> viewer.tell(maintain.message()));
                     }
                 }
 
@@ -106,9 +97,9 @@ public final class MenuListeners implements Listener {
      * @param event The event.
      */
     @EventHandler
-    public void onClickInInventory(final @NotNull InventoryClickEvent event) {
+    public <T extends MenuHolder> void onClickInInventory(final @NotNull InventoryClickEvent event) {
         // If somehow the HumanEntity that clicked a menu is not a player, ignore.
-        if (!(event.getWhoClicked() instanceof final Player player))
+        if (!(event.getWhoClicked() instanceof Player))
             return;
 
         // Get the clicked inventory, either a proper menu or the player's inventory.
@@ -118,25 +109,15 @@ public final class MenuListeners implements Listener {
         // Where did this player click?
         final ClickLocation clickLocation = clickedInventory != null ? (clickedInventory.getType() == InventoryType.CHEST ? ClickLocation.MENU : ClickLocation.PLAYER) : ClickLocation.OUTSIDE;
 
-        // Get the holder instance.
-        final IMenuHolder user = MenuUtils.getManager().getMenuHolder(player);
-        if (user == null) return;
+        final InventoryPosition position = InventoryPosition.fromSlot(event.getSlot());
 
-        if (!(event.getInventory().getHolder() instanceof MenuInventory)) {
-            // If the click location is a player (and wasn't handled earlier) allow the menu to handle the click.
-            if (clickLocation == ClickLocation.PLAYER) {
-                final Menu menu = user.getCurrentMenu();
-                if (menu != null) {
-                    menu.onPlayerClick(event);
-                }
-            }
-            return;
-        }
+        if (event.getInventory().getHolder() instanceof final MenuInventory<? extends MenuHolder> inv) {
+            // Get the holder instance.
+            final T user = (T) inv.holder();
 
-        if (event.getInventory().getHolder() instanceof MenuInventory) {
             if (user.getViewedMenu() != null) {
-                final Menu viewedMenu = user.getViewedMenu();
-                if (viewedMenu.getViewers().contains(user)) {
+                final Menu<T> viewedMenu = (Menu<T>) user.getViewedMenu();
+                if (viewedMenu.viewers().contains(user)) {
                     event.setResult(Event.Result.DENY);
                     event.setCancelled(true);
                     return;
@@ -146,10 +127,10 @@ public final class MenuListeners implements Listener {
             }
 
             // Get the holder's current menu.
-            final Menu menu = user.getCurrentMenu();
+            final Menu<T> menu = (Menu<T>) user.getCurrentMenu();
             // If the menu is null, ignore it. Otherwise, attempt to run menu logic.
             if (menu != null) {
-                if (user.getBase().getOpenInventory().getType() == InventoryType.CREATIVE || user.getBase().getOpenInventory().getType() == InventoryType.CRAFTING) {
+                if (user.player().getOpenInventory().getType() == InventoryType.CREATIVE || user.player().getOpenInventory().getType() == InventoryType.CRAFTING) {
                     // If the clicked inventory was creative or a crafting table,
                     // remove the holders currently viewed menu and ignore.
                     if (user.getCurrentMenu() != null) {
@@ -163,7 +144,7 @@ public final class MenuListeners implements Listener {
                 final ItemStack cursor = event.getCursor();
 
                 // Is this action allowed?
-                final boolean allowed = menu.isAllowed(clickLocation, event.getSlot(), clicked, cursor);
+                final boolean allowed = menu.isAllowed(user, clickLocation, event.getSlot(), clicked, cursor);
 
                 // If the action is not allowed, set the result to deny and cancel the event.
                 if (!allowed) {
@@ -184,41 +165,41 @@ public final class MenuListeners implements Listener {
                         // Attempt to handle buttons.
                         try {
                             // Attempt to find a registered button of the clicked ItemStack.
-                            final Button button = menu.getButton(clicked);
+                            final Button<T> button = menu.getButton(clicked, position);
 
                             // If the button is not null, allow the button to handle the click,
                             // if it is null, allow the menu to handle it.
                             if (button != null) {
                                 button.onClicked(user, menu, event.getClick());
 
-                                if (button instanceof final DynamicButton dynamicButton) {
+                                if (button instanceof final DynamicButton<T> dynamicButton) {
                                     dynamicButton.updateInner(user, menu);
                                 }
-                            } else if (menu instanceof final PaginatedMenu<?> pagedMenu) {
+                            } else if (menu instanceof final PaginatedMenu<T, ?> pagedMenu) {
                                 // Check if we are a paged men.
-                                final Button pageButton = pagedMenu.getPageButton(clicked);
+                                final Button<T> pageButton = pagedMenu.getPageButton(clicked, position);
                                 if (pageButton != null) {
                                     pageButton.onClicked(user, menu, event.getClick());
 
-                                    if (pageButton instanceof final DynamicButton dynamicButton) {
+                                    if (pageButton instanceof final DynamicButton<T> dynamicButton) {
                                         dynamicButton.updateInner(user, menu);
                                     }
                                 } else {
-                                    menu.onClick(user, menu.getPositionFromSlot(event.getSlot()), event.getClick(), clicked);
+                                    menu.onClick(user, position, event.getClick(), clicked);
                                 }
-                            } else if (menu instanceof final PageMenu pageMenu) {
-                                final Button pageButton = pageMenu.getPageButton(clicked);
+                            } else if (menu instanceof final PageMenu<T> pageMenu) {
+                                final Button<T> pageButton = pageMenu.getPageButton(clicked, position);
                                 if (pageButton != null) {
                                     pageButton.onClicked(user, menu, event.getClick());
 
-                                    if (pageButton instanceof final DynamicButton dynamicButton) {
+                                    if (pageButton instanceof final DynamicButton<T> dynamicButton) {
                                         dynamicButton.updateInner(user, menu);
                                     }
                                 } else {
-                                    menu.onClick(user, menu.getPositionFromSlot(event.getSlot()), event.getClick(), clicked);
+                                    menu.onClick(user, position, event.getClick(), clicked);
                                 }
                             } else {
-                                menu.onClick(user, menu.getPositionFromSlot(event.getSlot()), event.getClick(), clicked);
+                                menu.onClick(user, position, event.getClick(), clicked);
                             }
                         } catch (final Throwable throwable) {
                             // Catches any errors thrown and sends a message to the viewer that something happened.
@@ -227,7 +208,7 @@ public final class MenuListeners implements Listener {
                             MenuUtils.sendDeveloperErrorMessage(user, throwable);
 
                             // Close the inventory for the viewer of the inventory (to prevent any further issues)
-                            user.getBase().closeInventory();
+                            user.player().closeInventory();
                             // Send them a message saying something happened.
                             user.tell("<red>An error occurred while clicking in your menu! If this happens again, please report this to staff member!");
                             // Also log the error to console.
@@ -237,7 +218,7 @@ public final class MenuListeners implements Listener {
                     }
                     // If the location is not a menu, handle the click for a player.
                     if (clickLocation == ClickLocation.PLAYER) {
-                        menu.onPlayerClick(event);
+                        menu.onPlayerClick(user, event);
                     }
                     // Return, we don't want to continue anymore all logic should have been run.
                     return;
@@ -246,47 +227,47 @@ public final class MenuListeners implements Listener {
                 // If the action was to move to another inventory or the click location wasn't a player and wasn't handled otherwise.
                 if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
                     if (clickLocation == ClickLocation.PLAYER) {
-                        menu.onPlayerClick(event);
+                        menu.onPlayerClick(user, event);
                         return;
                     }
                     // Attempt to handle the click.
                     try {
                         // The button from the clicked item.
-                        final Button button = menu.getButton(clicked);
+                        final Button<T> button = menu.getButton(clicked, position);
                         // If the button isn't null, let it handle the click, if it is null, let the menu handle it.
                         if (button != null) {
                             button.onClicked(user, menu, event.getClick());
 
-                            if (button instanceof DynamicButton dynamicButton) {
+                            if (button instanceof DynamicButton<T> dynamicButton) {
                                 dynamicButton.updateInner(user, menu);
                             }
-                        } else if (menu instanceof PaginatedMenu<?> paginatedMenu) {
+                        } else if (menu instanceof PaginatedMenu<T, ?> paginatedMenu) {
                             // Check if we are a paged menu.
 
                             // We are a paged menu! Attempt page button lookup.
-                            final Button pageButton = paginatedMenu.getPageButton(clicked);
+                            final Button<T> pageButton = paginatedMenu.getPageButton(clicked, position);
                             if (pageButton != null) {
                                 pageButton.onClicked(user, menu, event.getClick());
 
-                                if (pageButton instanceof DynamicButton dynamicButton) {
+                                if (pageButton instanceof DynamicButton<T> dynamicButton) {
                                     dynamicButton.updateInner(user, menu);
                                 }
                             } else {
-                                menu.onClick(user, menu.getPositionFromSlot(event.getSlot()), event.getClick(), clicked);
+                                menu.onClick(user, position, event.getClick(), clicked);
                             }
-                        } else if (menu instanceof final PageMenu pageMenu) {
-                            final Button pageButton = pageMenu.getPageButton(clicked);
+                        } else if (menu instanceof final PageMenu<T> pageMenu) {
+                            final Button<T> pageButton = pageMenu.getPageButton(clicked, position);
                             if (pageButton != null) {
                                 pageButton.onClicked(user, menu, event.getClick());
 
-                                if (pageButton instanceof final DynamicButton dynamicButton) {
+                                if (pageButton instanceof final DynamicButton<T> dynamicButton) {
                                     dynamicButton.updateInner(user, menu);
                                 }
                             } else {
-                                menu.onClick(user, menu.getPositionFromSlot(event.getSlot()), event.getClick(), clicked);
+                                menu.onClick(user, position, event.getClick(), clicked);
                             }
                         } else {
-                            menu.onClick(user, menu.getPositionFromSlot(event.getSlot()), event.getClick(), clicked);
+                            menu.onClick(user, position, event.getClick(), clicked);
                         }
                     } catch (final Throwable throwable) {
                         // Catches any errors thrown and sends a message to the viewer that something happened.
@@ -295,7 +276,7 @@ public final class MenuListeners implements Listener {
                         MenuUtils.sendDeveloperErrorMessage(user, throwable);
 
                         // Close the inventory for the viewer of the inventory (to prevent any further issues)
-                        user.getBase().closeInventory();
+                        user.player().closeInventory();
                         // Send them a message saying something happened.
                         user.tell("<red>An error occurred while clicking in your menu! If this happens again, please report this to staff member!");
                         // Also log the error to console.
@@ -305,7 +286,7 @@ public final class MenuListeners implements Listener {
                 }
                 // If the click location is a player (and wasn't handled earlier) allow the menu to handle the click.
                 if (clickLocation == ClickLocation.PLAYER) {
-                    menu.onPlayerClick(event);
+                    menu.onPlayerClick(user, event);
                 }
             }
         }
@@ -317,16 +298,16 @@ public final class MenuListeners implements Listener {
      * @param event the event.
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void onDrag(@NotNull InventoryDragEvent event) {
-        if (event.getWhoClicked() instanceof final Player player && event.getInventory().getHolder() instanceof MenuInventory) {
+    public <T extends MenuHolder> void onDrag(@NotNull InventoryDragEvent event) {
+        if (event.getWhoClicked() instanceof Player && event.getInventory().getHolder() instanceof final MenuInventory<? extends MenuHolder> inv) {
             // Get the holder instance.
-            final IMenuHolder user = MenuUtils.getManager().getMenuHolder(player);
+            final T user = (T) inv.holder();
             if (user == null) return;
 
             if (user.getViewedMenu() != null) {
-                final Menu viewedMenu = user.getViewedMenu();
+                final Menu<T> viewedMenu = (Menu<T>) user.getViewedMenu();
                 // We cancel dragging if the user is viewing the menu.
-                if (viewedMenu.getViewers().contains(user)) {
+                if (viewedMenu.viewers().contains(user)) {
                     event.setResult(Event.Result.DENY);
                     event.setCancelled(true);
                     return;
@@ -336,7 +317,7 @@ public final class MenuListeners implements Listener {
             }
 
             // Get the user's current menu.
-            final Menu menu = user.getCurrentMenu();
+            final Menu<T> menu = (Menu<T>) user.getCurrentMenu();
             // If the menu is null, ignore it. Otherwise, deny drag events.
             if (menu != null) {
                 if (menu instanceof final CheckDrag checkDrag) {

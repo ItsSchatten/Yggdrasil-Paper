@@ -12,7 +12,6 @@ import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.translation.GlobalTranslator;
 import org.bukkit.NamespacedKey;
@@ -43,7 +42,6 @@ import java.util.*;
 public final class Utils {
 
     private final static PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
-    private final static MiniMessage MINI_MESSAGE = StringUtil.builtMiniMessage();
 
     private static ComponentLogger logger;
     /**
@@ -461,7 +459,7 @@ public final class Utils {
      */
     public static void translate(@NotNull Audience audience, String translatable, Component... placeholders) {
         final String message = PLAIN.serialize(GlobalTranslator.render(Component.translatable(translatable,
-                        Arrays.stream(placeholders).map(MINI_MESSAGE::serialize).map(Component::text).toList()),
+                        Arrays.stream(placeholders).map(StringUtil.builtMiniMessage()::serialize).map(Component::text).toList()),
                 audience.get(Identity.LOCALE).orElse(Locale.ENGLISH)));
 
         audience.sendMessage(StringUtil.color(message));

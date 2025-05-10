@@ -1,13 +1,13 @@
 package com.itsschatten.yggdrasil.menus.buttons.premade;
 
-import com.itsschatten.yggdrasil.menus.Menu;
-import com.itsschatten.yggdrasil.menus.buttons.Button;
-import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
-import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
-import com.itsschatten.yggdrasil.menus.utils.MenuRunnable;
 import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.items.ItemOptions;
 import com.itsschatten.yggdrasil.items.MetaManipulator;
+import com.itsschatten.yggdrasil.menus.Menu;
+import com.itsschatten.yggdrasil.menus.buttons.Button;
+import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
+import com.itsschatten.yggdrasil.menus.utils.MenuRunnable;
 import lombok.Builder;
 import lombok.Singular;
 import org.bukkit.Material;
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 @Builder
-public final class NavigationButton extends Button {
+public final class NavigationButton<T extends MenuHolder> extends Button<T> {
 
     /**
      * The lore to apply to the button.
@@ -82,26 +82,26 @@ public final class NavigationButton extends Button {
     /**
      * {@inheritDoc}
      *
-     * @param user The {@link IMenuHolder} that clicked this button.
-     * @param menu The {@link Menu} that this button was clicked in.
+     * @param user  The {@link T} that clicked this button.
+     * @param menu  The {@link Menu} that this button was clicked in.
      * @param click The {@link ClickType} that was used to click this button.
      */
     @Override
-    public void onClicked(final IMenuHolder user, final Menu menu, final ClickType click) {
+    public void onClicked(final T user, final Menu<T> menu, final ClickType click) {
         runnable.run(user, menu, click);
     }
 
-    public static class NavigationButtonBuilder {
+    public static class NavigationButtonBuilder<T extends MenuHolder> {
 
-        public NavigationButtonBuilder position(final InventoryPosition position) {
+        public NavigationButtonBuilder<T> position(final InventoryPosition position) {
             this.position = position;
             return this;
         }
 
-        public NavigationButtonBuilder position(final int row, final int column) {
+        public NavigationButtonBuilder<T> position(final int row, final int column) {
             return position(InventoryPosition.of(row, column));
         }
 
     }
-    
+
 }

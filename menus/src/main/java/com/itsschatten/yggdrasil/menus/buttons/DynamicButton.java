@@ -5,8 +5,8 @@ import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.interfaces.AlternativeDisplayItem;
-import com.itsschatten.yggdrasil.menus.utils.IMenuHolder;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
  * A button that can be automatically updated after being clicked and retain all of its functionality.
  */
 @Setter
-public abstract class DynamicButton extends Button implements AlternativeDisplayItem {
+public abstract class DynamicButton<T extends MenuHolder> extends Button<T> implements AlternativeDisplayItem {
 
     /**
      * The {@link ItemStack} that belongs to this button, this is used in click checks to ensure reliability.
@@ -78,7 +78,7 @@ public abstract class DynamicButton extends Button implements AlternativeDisplay
      * @param holder The holder of the menu.
      * @param menu   The menu that we should update.
      */
-    public final void updateInner(final @NotNull IMenuHolder holder, final Menu menu) {
+    public final void updateInner(final @NotNull T holder, final Menu<T> menu) {
         if (holder.getCurrentMenu() == menu) {
             if (updateStack() != null) {
                 setInnerStack(updateStack().make());

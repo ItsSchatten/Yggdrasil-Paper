@@ -32,7 +32,7 @@ public record InventoryPosition(@Range(from = 0, to = 5) int row, @Range(from = 
      */
     @Unmodifiable
     @NotNull
-    public static ImmutableList<InventoryPosition> SIDE_POSITIONS = ImmutableList.of(
+    public static ImmutableList<InventoryPosition> EDGE_POSITIONS = ImmutableList.of(
             of(0, 0), of(1, 0), of(2, 0),
             of(3, 0), of(4, 0), of(5, 0),
             of(0, 8), of(1, 8), of(2, 8),

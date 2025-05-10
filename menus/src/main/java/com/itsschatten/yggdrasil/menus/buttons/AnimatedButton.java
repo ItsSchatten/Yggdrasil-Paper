@@ -4,7 +4,7 @@ import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.interfaces.AlternativeDisplayItem;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
-import lombok.Getter;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import lombok.Setter;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
  * Represents a {@link Button} that can be animated.
  */
 @Setter
-public abstract class AnimatedButton extends Button implements AlternativeDisplayItem {
+public abstract class AnimatedButton<T extends MenuHolder> extends Button<T> implements AlternativeDisplayItem {
 
     // Item stack used in-order to properly run click logic.
     // Button#getItemStack normally fails because it cannot be updated without a new button created.
@@ -74,7 +74,6 @@ public abstract class AnimatedButton extends Button implements AlternativeDispla
      * @param menu The menu to run for.
      */
     public final void run(final @NotNull Menu menu) {
-        if (menu.getInventory() == null || menu.getBukkitInventory() == null) return;
         setInnerStack(animation());
 
         if (getPositions() != null && !getPositions().isEmpty()) {

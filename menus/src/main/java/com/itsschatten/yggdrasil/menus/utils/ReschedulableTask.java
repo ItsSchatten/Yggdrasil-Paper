@@ -120,11 +120,12 @@ public abstract class ReschedulableTask implements Runnable {
      */
     public enum Type {
         /**
-         * A menu task.
+         * A menu task, usually runs against the entire menu.
          */
         MENU,
+
         /**
-         * A button task.
+         * A button task, runs against a button.
          */
         BUTTON
     }

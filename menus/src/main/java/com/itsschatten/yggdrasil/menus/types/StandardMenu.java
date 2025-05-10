@@ -1,18 +1,17 @@
 package com.itsschatten.yggdrasil.menus.types;
 
 import com.itsschatten.yggdrasil.menus.Menu;
+import com.itsschatten.yggdrasil.menus.buttons.Button;
 import com.itsschatten.yggdrasil.menus.buttons.premade.CloseButton;
 import com.itsschatten.yggdrasil.menus.buttons.premade.InfoButton;
 import com.itsschatten.yggdrasil.menus.buttons.premade.ReturnButton;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
-import com.itsschatten.yggdrasil.menus.utils.MenuInventory;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import lombok.Getter;
-import lombok.Setter;
-import org.apache.commons.lang3.Validate;
 import org.bukkit.Material;
-import org.jetbrains.annotations.NotNull;
+import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Range;
 
 import java.util.List;
 import java.util.Objects;
@@ -20,7 +19,7 @@ import java.util.Objects;
 /**
  * Standard menu, nothing special about this one.
  */
-public abstract class StandardMenu extends Menu {
+public abstract class StandardMenu<T extends MenuHolder> extends Menu<T> {
 
     /**
      * The parent of this menu.
@@ -31,104 +30,56 @@ public abstract class StandardMenu extends Menu {
      */
     @Nullable
     @Getter
-    private final Menu parent;
-
-    /**
-     * The number of rows for this menu, for accurate size use {@link #getSize()}.
-     */
-    protected Integer rows;
-
-    /**
-     * The number of cells in this menu.
-     */
-    private Integer size;
-
-    /**
-     * The title of this menu.
-     * --- GETTER ---
-     * Get the title of this menu.
-     *
-     * @return A {@link String} that represents the title of this Menu.
-     * --- SETTER ---
-     * Set the title of this Menu.
-     * @param title The title to set.
-     */
-    @Getter
-    @Setter
-    private String title;
+    private final Menu<T> parent;
 
     /**
      * Standard implementation of {@link StandardMenu}.
      *
      * @param parent The parent (or previous) {@link StandardMenu}.
      */
-    public StandardMenu(@Nullable final Menu parent) {
+    public StandardMenu(@Nullable final Menu<T> parent, String title, int size) {
+        super(size, title);
         this.parent = parent;
-    }
-
-    /**
-     * Set the rows for this menu.
-     *
-     * @param rows The number of rows for the inventory.
-     */
-    public void setRows(@Range(from = 1, to = 6) Integer rows) {
-        this.rows = rows;
-    }
-
-    /**
-     * Gets the size of the inventory
-     *
-     * @return The size of the inventory.
-     */
-    public final @Range(from = 9, to = 54) int getSize() {
-        if (rows == null)
-            Validate.isTrue(size != null, "Size must be set in order to call getSize() in: " + this);
-        return rows != null && (rows > 0) ? rows * 9 : size;
-    }
-
-    /**
-     * Sets the size of this Menu.
-     *
-     * @param size The size to set for this menu, must be a multiple of nine.
-     */
-    public void setSize(@Range(from = 9, to = 54) final int size) {
-        if (size % 9 != 0) {
-            throw new UnsupportedOperationException("Size must be multiple of 9.");
-        }
-        this.size = size;
     }
 
     /**
      * {@inheritDoc}
      */
-    @NotNull
     @Override
-    public MenuInventory formInventory() {
-        Objects.requireNonNull(title, "Title is not set in " + this.getClass().getSimpleName() + "!");
-
-        final MenuInventory inv;
-        if (rows != null && rows > 0) {
-            setSize(rows * 9);
-            inv = MenuInventory.ofRows(rows, this, title);
-        } else {
-            Objects.requireNonNull(size, "Size must be set for " + this + " if no rows are not provided!");
-            inv = MenuInventory.of(size, this, title);
-        }
-
-        inv.setViewer(getViewer());
-        inv.setMenu(this);
-        setInventory(inv);
-
+    public void formInventory() {
         registerPreMadeButtons();
         drawExtra();
         drawButtons();
-        return inv;
     }
 
     /**
      * Used to draw extra things to the menu that aren't necessarily menu buttons.
      */
     public void drawExtra() {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param position The position to check.
+     * @return Returns {@code true} if, and only if, a {@link Button} was found to be in the same position as the one provided.
+     */
+    @Override
+    @ApiStatus.Internal
+    public boolean isSlotTakenByButton(InventoryPosition position) {
+        // We filter any buttons the player doesn't have permission to view, as those technically don't exist.
+        // Then we find any buttons that equal the provided position.
+        // In honesty, the permission check is kinda redundant, as there is no "weight"
+        // to button registering, instead just when the button is registered.
+        return buttons().stream()
+                .filter(button -> button.getPermission() != null && !holder().hasPermission(button.getPermission()))
+                .anyMatch((button) -> button.getPosition().equals(position));
+    }
+
+    // TODO: unfinalize?
+    @Override
+    public final Button<T> getButton(ItemStack stack, InventoryPosition position) {
+        return getButtonImpl(stack, position, buttons());
     }
 
     /**
@@ -159,11 +110,11 @@ public abstract class StandardMenu extends Menu {
      * @see CloseButton#builder()
      */
     @Nullable
-    public CloseButton.CloseButtonBuilder getCloseButton() {
-        return CloseButton.builder()
+    public CloseButton.CloseButtonBuilder<T> getCloseButton() {
+        return CloseButton.<T>builder()
                 .material(Material.BARRIER)
                 .name("<red>Close")
-                .position(InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 1));
+                .position(InventoryPosition.of(rows() - 1, columns() - 1));
     }
 
     /**
@@ -173,12 +124,12 @@ public abstract class StandardMenu extends Menu {
      * @see ReturnButton#builder()
      */
     @Nullable
-    public ReturnButton.ReturnButtonBuilder getReturnButton() {
-        return ReturnButton.builder()
+    public ReturnButton.ReturnButtonBuilder<T> getReturnButton() {
+        return ReturnButton.<T>builder()
                 .menuToReturn(parent)
                 .material(Material.ARROW)
-                .name("<yellow>< Return to " + (parent != null ? parent.getInventory().getTitle() : ""))
-                .position(InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 2));
+                .name("<yellow>< Return to " + (parent != null ? parent.getTitle() : ""))
+                .position(InventoryPosition.of(rows() - 1, columns() - (addClose() ? 2 : 1)));
     }
 
     /**
@@ -188,12 +139,12 @@ public abstract class StandardMenu extends Menu {
      * @see InfoButton#builder()
      */
     @Nullable
-    public InfoButton.InfoButtonBuilder getInfoButton() {
-        return InfoButton.builder()
+    public InfoButton.InfoButtonBuilder<T> getInfoButton() {
+        return InfoButton.<T>builder()
                 .material(Material.NETHER_STAR)
                 .name("<yellow>Information")
                 .lore(getInfo())
-                .position(InventoryPosition.of(getInventory().getRows() - 1, getInventory().getColumns() - 9));
+                .position(InventoryPosition.of(rows() - 1, columns() - 9));
     }
 
     /**
@@ -231,4 +182,5 @@ public abstract class StandardMenu extends Menu {
     public boolean addInfo() {
         return getInfo() != null && !getInfo().isEmpty();
     }
+
 }

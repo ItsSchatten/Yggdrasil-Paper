@@ -3,6 +3,7 @@ package com.itsschatten.yggdrasil.menus.buttons.impl;
 import com.itsschatten.yggdrasil.items.ItemCreator;
 import com.itsschatten.yggdrasil.menus.buttons.CommandButton;
 import com.itsschatten.yggdrasil.menus.utils.InventoryPosition;
+import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import lombok.Builder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,7 +12,7 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 @Builder(builderClassName = "Builder")
-public class CommandButtonImpl extends CommandButton {
+public class CommandButtonImpl<T extends MenuHolder> extends CommandButton<T> {
 
     final @NotNull InventoryPosition position;
     final @Nullable Collection<InventoryPosition> positions;
@@ -73,14 +74,14 @@ public class CommandButtonImpl extends CommandButton {
         return this.positions;
     }
 
-    public static class Builder {
+    public static class Builder<T extends MenuHolder> {
 
-        public Builder position(InventoryPosition position) {
+        public Builder<T> position(InventoryPosition position) {
             this.position = position;
             return this;
         }
 
-        public Builder position(int row, int column) {
+        public Builder<T> position(int row, int column) {
             return this.position(InventoryPosition.of(row, column));
         }
 
