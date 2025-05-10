@@ -150,7 +150,7 @@ public abstract class PaginatedMenu<T extends MenuHolder, V> extends StandardMen
         return registeredPageButtons.stream()
                 .filter(button -> button.getPermission() != null && !holder().hasPermission(button.getPermission()))
                 .anyMatch((button) -> button.getPosition().equals(position))
-                && super.isSlotTakenByButton(position);
+                || super.isSlotTakenByButton(position);
     }
 
     /**
@@ -266,25 +266,32 @@ public abstract class PaginatedMenu<T extends MenuHolder, V> extends StandardMen
         if (center) {
             // Clear the middle slots.
             for (int i = 0; i < usable; i++) {
-                if (isSlotTakenByButton(InventoryPosition.MIDDLE_POSITIONS.get(i))) {
-                    forceSet(InventoryPosition.MIDDLE_POSITIONS.get(i), new ItemStack(Material.AIR));
-                }
+                forceSet(InventoryPosition.MIDDLE_POSITIONS.get(i), new ItemStack(Material.AIR));
             }
         } else {
             // Replace all placeable positions with air.
             if (getPlaceablePositions() != null && !getPlaceablePositions().isEmpty()) {
                 for (int i = 0; i < usable; i++) {
-                    if (isSlotTakenByButton(getPlaceablePositions().get(i))) {
-                        forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
-                    }
+                    forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
                 }
             } else {
                 for (int i = 0; i < usable; i++) {
-                    if (isSlotTakenByButton(InventoryPosition.fromSlot(i))) {
-                        forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
-                    }
+                    forceSet(getPlaceablePositions().get(i), new ItemStack(Material.AIR));
                 }
             }
+        }
+
+        // Clear the next and counter buttons.
+        if (getNextButton() != null) {
+            forceSet(getNextButton().build().getPosition(), new ItemStack(Material.AIR));
+        }
+
+        if (getPreviousButton() != null) {
+            forceSet(getPreviousButton().build().getPosition(), new ItemStack(Material.AIR));
+        }
+
+        if (getCounterButton() != null) {
+            forceSet(getCounterButton().build().getPosition(), new ItemStack(Material.AIR));
         }
     }
 
@@ -548,8 +555,8 @@ public abstract class PaginatedMenu<T extends MenuHolder, V> extends StandardMen
      * @see NavigationButton#builder()
      */
     @Nullable
-    public NavigationButton.NavigationButtonBuilder getCounterButton() {
-        return NavigationButton.builder()
+    public NavigationButton.NavigationButtonBuilder<T> getCounterButton() {
+        return NavigationButton.<T>builder()
                 .material(Material.NAME_TAG)
                 .name(getCounterString())
                 .lore(pages.size() > 1 ? List.of("Click me to be sent back to the first page.", "Or right click to be sent to the last page!") : List.of())
@@ -573,8 +580,8 @@ public abstract class PaginatedMenu<T extends MenuHolder, V> extends StandardMen
      * @see NavigationButton#builder()
      */
     @Nullable
-    public NavigationButton.NavigationButtonBuilder getNextButton() {
-        return NavigationButton.builder()
+    public NavigationButton.NavigationButtonBuilder<T> getNextButton() {
+        return NavigationButton.<T>builder()
                 .material(Material.ARROW)
                 .name("<yellow>Next >")
                 .runnable((user, menu, type) -> {
@@ -597,8 +604,8 @@ public abstract class PaginatedMenu<T extends MenuHolder, V> extends StandardMen
      * @see NavigationButton#builder()
      */
     @Nullable
-    public NavigationButton.NavigationButtonBuilder getPreviousButton() {
-        return NavigationButton.builder()
+    public NavigationButton.NavigationButtonBuilder<T> getPreviousButton() {
+        return NavigationButton.<T>builder()
                 .material(Material.ARROW)
                 .name("<yellow>< Previous")
                 .runnable((user, menu, type) -> {

@@ -168,7 +168,7 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
      */
     public final void redraw() {
         drawButtons();
-        display(holder());
+        displayTo(holder());
     }
 
     /**

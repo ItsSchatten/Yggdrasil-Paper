@@ -129,7 +129,7 @@ public abstract class StandardMenu<T extends MenuHolder> extends Menu<T> {
                 .menuToReturn(parent)
                 .material(Material.ARROW)
                 .name("<yellow>< Return to " + (parent != null ? parent.getTitle() : ""))
-                .position(InventoryPosition.of(rows() - 1, columns() - 2));
+                .position(InventoryPosition.of(rows() - 1, columns() - (addClose() ? 2 : 1)));
     }
 
     /**
