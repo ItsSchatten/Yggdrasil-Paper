@@ -2,8 +2,7 @@ package com.itsschatten.yggdrasil.menus.utils;
 
 import com.itsschatten.yggdrasil.Utils;
 import com.itsschatten.yggdrasil.menus.Menu;
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -39,16 +38,14 @@ public class MenuHolder {
     /**
      * The player that this class is wrapping.
      */
-    @Getter
-    @Accessors(fluent = true)
-    private final @NotNull Player player;
+    private @Nullable Player player;
 
     /**
      * Constructs a new MenuHolder.
      *
      * @param player The base player for this holder.
      */
-    public MenuHolder(final @NotNull Player player) {
+    public MenuHolder(final @Nullable Player player) {
         this.player = player;
     }
 
@@ -58,6 +55,7 @@ public class MenuHolder {
      * @param player The {@link Player} to wrap.
      * @return Returns a new {@link MenuHolder}.
      * @implNote It is not recommended to use this method if you plan on making your own class extending MenuHolder, you should instead cache things yourself.
+     * @see #wrap(CommandSourceStack)
      */
     @Contract(value = "_ -> new", pure = true)
     public static @NotNull MenuHolder wrap(final @NotNull Player player) {
@@ -75,6 +73,60 @@ public class MenuHolder {
     }
 
     /**
+     * Quickly creates a new {@link MenuHolder} with the provided {@link io.papermc.paper.command.brigadier.CommandSourceStack}
+     * or gets their "cached" value.
+     *
+     * @param commandSource The {@link CommandSourceStack} to wrap.
+     * @return Returns a new {@link MenuHolder}.
+     * @throws UnsupportedOperationException Thrown if the provided {@link CommandSourceStack} sender is not a player.
+     * @implNote It is not recommended to use this method if you plan on making your own class extending MenuHolder, you should instead cache things yourself.
+     * @see #wrap(Player)
+     */
+    @Contract(value = "_ -> new", pure = true)
+    public static @NotNull MenuHolder wrap(final @NotNull CommandSourceStack commandSource) {
+        if (commandSource.getSender() instanceof final Player player) {
+            return wrap(player);
+        }
+
+        throw new UnsupportedOperationException("'" + commandSource.getSender() + "' cannot be a MenuHolder.");
+    }
+
+    /**
+     * Returns the {@link Player} instance of this class, without checking for {@code null}.
+     *
+     * @return The {@link #player} variable.
+     * @see #player()
+     */
+    public final @Nullable Player getPlayer() {
+        return player;
+    }
+
+    public final void setPlayer(@Nullable Player player) {
+        this.player = player;
+    }
+
+    /**
+     * Get the {@link Player} instance for this class.
+     *
+     * @return Returns the {@link #player} object.
+     * @throws IllegalStateException Thrown if the player is {@code null}.
+     */
+    public final @NotNull Player player() {
+        if (player == null)
+            throw new IllegalStateException("The provided player for " + getClass().getSimpleName() + " is 'null.'");
+        return player;
+    }
+
+    /**
+     * Set the {@link Player} instance for this class.
+     *
+     * @param player The {@link Player} object to update this class.
+     */
+    public final void player(final @NotNull Player player) {
+        this.player = player;
+    }
+
+    /**
      * Gets the value of a specific permission, if set.
      * <br/>
      * If no override is set for this object, it will return the default.
@@ -83,7 +135,7 @@ public class MenuHolder {
      * @return Returns the value of the provided permission.
      */
     public final boolean hasPermission(final String permission) {
-        return player.hasPermission(permission);
+        return player().hasPermission(permission);
     }
 
     /**
@@ -95,7 +147,7 @@ public class MenuHolder {
      * @return Returns the value of the provided permission.
      */
     public final boolean hasPermission(final Permission permission) {
-        return player.hasPermission(permission);
+        return player().hasPermission(permission);
     }
 
     /**
@@ -139,7 +191,7 @@ public class MenuHolder {
      * @see MenuListeners
      */
     public final void setViewedMenu(Menu<? extends MenuHolder> menu) {
-        player.setMetadata(VIEWED_TAG, new FixedMetadataValue(Utils.getInstance(), menu));
+        player().setMetadata(VIEWED_TAG, new FixedMetadataValue(Utils.getInstance(), menu));
     }
 
     /**
@@ -148,7 +200,7 @@ public class MenuHolder {
      * @see MenuListeners
      */
     public final void removeCurrentMenu() {
-        player.removeMetadata(CURRENT_TAG, Utils.getInstance());
+        player().removeMetadata(CURRENT_TAG, Utils.getInstance());
     }
 
     /**
@@ -157,7 +209,7 @@ public class MenuHolder {
      * @see MenuListeners
      */
     public final void removePreviousMenu() {
-        player.removeMetadata(PREVIOUS_TAG, Utils.getInstance());
+        player().removeMetadata(PREVIOUS_TAG, Utils.getInstance());
     }
 
     /**
@@ -166,7 +218,7 @@ public class MenuHolder {
      * @see MenuListeners
      */
     public final void removeViewedMenu() {
-        player.removeMetadata(VIEWED_TAG, Utils.getInstance());
+        player().removeMetadata(VIEWED_TAG, Utils.getInstance());
     }
 
     /**
@@ -178,14 +230,14 @@ public class MenuHolder {
      * @see MenuListeners
      */
     public final void updateMenu(final Menu<? extends MenuHolder> menu) {
-        if (player.hasMetadata(CURRENT_TAG)) {
+        if (player().hasMetadata(CURRENT_TAG)) {
             try {
-                player.setMetadata(PREVIOUS_TAG, new FixedMetadataValue(Utils.getInstance(), getCurrentMenu()));
+                player().setMetadata(PREVIOUS_TAG, new FixedMetadataValue(Utils.getInstance(), getCurrentMenu()));
             } catch (ClassCastException ignored) {
             }
         }
 
-        player.setMetadata(CURRENT_TAG, new FixedMetadataValue(Utils.getInstance(), menu));
+        player().setMetadata(CURRENT_TAG, new FixedMetadataValue(Utils.getInstance(), menu));
     }
 
     /**
@@ -195,9 +247,9 @@ public class MenuHolder {
      * @return Returns a possibly {@code null} {@link Menu} instance.
      */
     private @Nullable Menu<? extends MenuHolder> obtainMenu(final String nbtTag) {
-        if (player.hasMetadata(nbtTag)) {
+        if (player().hasMetadata(nbtTag)) {
             try {
-                return (Menu<? extends MenuHolder>) player.getMetadata(nbtTag).getFirst().value();
+                return (Menu<? extends MenuHolder>) player().getMetadata(nbtTag).getFirst().value();
             } catch (ClassCastException ex) {
                 return null;
             }
@@ -212,7 +264,7 @@ public class MenuHolder {
      * @param messages An additional array of messages to send to the base.
      */
     public final void tell(final String message, final String... messages) {
-        Utils.tell(player, message, messages);
+        Utils.tell(player(), message, messages);
     }
 
     /**
@@ -222,7 +274,7 @@ public class MenuHolder {
      * @param messages An additional array of {@link Component}s to send.
      */
     public final void tell(final Component message, final Component... messages) {
-        Utils.tell(player, message, messages);
+        Utils.tell(player(), message, messages);
     }
 
     /**
@@ -232,7 +284,7 @@ public class MenuHolder {
      * @param arguments The arguments to replace as a string. If there are any in the translation string.
      */
     public final void translate(String key, String... arguments) {
-        Utils.translate(player, key, arguments);
+        Utils.translate(player(), key, arguments);
     }
 
     /**
@@ -242,7 +294,7 @@ public class MenuHolder {
      * @param arguments The arguments to replace as a component. If there are any in the translation string.
      */
     public final void translate(String key, Component... arguments) {
-        Utils.translate(player, key, arguments);
+        Utils.translate(player(), key, arguments);
     }
 
     /**
@@ -251,7 +303,7 @@ public class MenuHolder {
      * @param key The translation key from a resource pack. I.E. "inventory.anvil.title"
      */
     public final void translate(String key) {
-        Utils.translate(player, key);
+        Utils.translate(player(), key);
     }
 
     /**

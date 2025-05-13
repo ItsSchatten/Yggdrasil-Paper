@@ -6,7 +6,6 @@ import com.itsschatten.yggdrasil.menus.Menu;
 import com.itsschatten.yggdrasil.menus.buttons.Button;
 import com.itsschatten.yggdrasil.menus.buttons.interfaces.AlternativeDisplayItem;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -56,15 +55,11 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
      * The title of this inventory.
      */
     @Getter
-    @Setter
-    private String title;
+    private final String title;
 
     /**
      * The viewer of this inventory.
      */
-    @Setter
-    @Getter
-    @Accessors(fluent = true)
     private T holder;
 
     /**
@@ -78,6 +73,24 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
         this.rows = size / 9;
         this.contents = new ItemStack[size / 9][9];
         this.bukkitInventory = Bukkit.createInventory(this, size, StringUtil.color(this.title));
+    }
+
+    /**
+     * Returns the {@link T} of this class.
+     *
+     * @return The {@link T} that holds this class.
+     */
+    public final @NotNull T holder() {
+        return holder;
+    }
+
+    /**
+     * Set the {@link MenuHolder} instance for this menu.
+     *
+     * @param holder The {@link T} to set.
+     */
+    public final void holder(@NotNull T holder) {
+        this.holder = holder;
     }
 
     /**
@@ -111,12 +124,15 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
     public abstract boolean isSlotTakenByButton(InventoryPosition position);
 
     /**
-     * Utility method to check if an {@link InventoryPosition} is taken by an {@link ItemStack}.
+     * Utility method to check if an {@link InventoryPosition} is taken by any {@link ItemStack}.
      *
      * @param position The position to check.
      * @return <code>true</code> if something is in the position, <code>false</code> otherwise.
      */
     public final boolean isSlotTaken(InventoryPosition position) {
+        if (isSlotTakenByButton(position)) {
+            return true;
+        }
         for (int row = 0; row < rows; row++) {
             for (int column = 0; column < columns; column++) {
                 if (contents[row][column] != null && contents[row][column].getType() != Material.AIR) {
@@ -136,6 +152,17 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
     public final void addItems(final ItemCreator @NotNull ... items) {
         for (final ItemCreator builder : items) {
             addItem(builder.make());
+        }
+    }
+
+    /**
+     * Add an array of {@link ItemStack}s to the inventory using an {@link ItemCreator.ItemCreatorBuilder}.
+     *
+     * @param items The array of {@link ItemCreator}
+     */
+    public final void addItems(final ItemCreator.ItemCreatorBuilder @NotNull ... items) {
+        for (final ItemCreator.ItemCreatorBuilder builder : items) {
+            addItem(builder.build().make());
         }
     }
 
@@ -179,6 +206,17 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
     }
 
     /**
+     * Fill an entire row (ignoring registered {@link Button buttons}) with an item.
+     *
+     * @param row     The row in the inventory we would like to fill.
+     * @param creator The {@link ItemCreator item creator} we should use to fill the row.
+     */
+    public final void setRow(final int row, @NotNull final ItemCreator.ItemCreatorBuilder creator) {
+        setRow(row, creator.build().make());
+    }
+
+
+    /**
      * Fill an entire row (ignoring registered {@link Button buttons} with an {@link ItemStack}
      *
      * @param row   The row in the inventory we would like to fill.
@@ -217,6 +255,16 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
     }
 
     /**
+     * Fill an entire column (ignoring registered {@link Button buttons} with an {@link ItemStack}.
+     *
+     * @param column  The column in the inventory we would like to fill.
+     * @param creator The {@link ItemCreator} we want to use to make an {@link ItemStack}
+     */
+    public final void setColumn(final int column, @NotNull final ItemCreator.ItemCreatorBuilder creator) {
+        setColumn(column, creator.build().make());
+    }
+
+    /**
      * Set the border of the inventory with an item, this ignores {@link Button registered buttons}.
      *
      * @param stack The {@link ItemStack} we want to use
@@ -233,6 +281,16 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
     public final void setBorder(@NotNull final ItemCreator creator) {
         setBorder(creator.make());
     }
+
+    /**
+     * Set the border of the inventory with an item, this ignores {@link Button registered buttons}.
+     *
+     * @param creator The {@link ItemCreator} we want to use
+     */
+    public final void setBorder(@NotNull final ItemCreator.ItemCreatorBuilder creator) {
+        setBorder(creator.build().make());
+    }
+
 
     /**
      * Fills a rectangle border in the inventory.
@@ -255,6 +313,32 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
                 set(row, column, stack);
             }
         }
+    }
+
+    /**
+     * Fills a rectangle border in the inventory.
+     *
+     * @param fromRow    The row we want to start from.
+     * @param fromColumn The column we want to start from.
+     * @param toRow      The row we want to go to.
+     * @param toColumn   The column we want to go to.
+     * @param builder    The {@link com.itsschatten.yggdrasil.items.ItemCreator.ItemCreatorBuilder} we want to use.
+     */
+    public final void setRectangle(final int fromRow, final int fromColumn, final int toRow, final int toColumn, final ItemCreator.@NotNull ItemCreatorBuilder builder) {
+        setRectangle(fromColumn, fromColumn, toRow, toColumn, builder.build().make());
+    }
+
+    /**
+     * Fills a rectangle border in the inventory.
+     *
+     * @param fromRow    The row we want to start from.
+     * @param fromColumn The column we want to start from.
+     * @param toRow      The row we want to go to.
+     * @param toColumn   The column we want to go to.
+     * @param creator    The {@link com.itsschatten.yggdrasil.items.ItemCreator} we want to use.
+     */
+    public final void setRectangle(final int fromRow, final int fromColumn, final int toRow, final int toColumn, final @NotNull ItemCreator creator) {
+        setRectangle(fromRow, fromColumn, toRow, toColumn, creator.make());
     }
 
     /**
@@ -357,6 +441,18 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
 
     /**
      * Set a slot in the inventory to an {@link ItemStack}.
+     *
+     * @param row     The row to set this stack in.
+     * @param column  The column to set this stack in.
+     * @param creator The {@link ItemCreator} to use to create the {@link ItemStack}.
+     * @see #forceSet(int, int, ItemCreator)
+     */
+    public final void forceSet(final int row, final int column, @NotNull final ItemCreator.ItemCreatorBuilder creator) {
+        forceSet(row, column, creator.build().make());
+    }
+
+    /**
+     * Set a slot in the inventory to an {@link ItemStack}.
      * <p>
      * If the button has a permission, it will also check if the viewer has permission.
      *
@@ -365,7 +461,7 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
      * @param button The {@link Button} to use to get the {@link ItemStack} from.
      * @see Button#getItem()
      */
-    public final void forceSet(final int row, final int column, @NotNull final Button button) {
+    public final void forceSet(final int row, final int column, @NotNull final Button<T> button) {
         if (button.getPermission() != null)
             forceSet(row, column, holder.hasPermission(button.getPermission()) ?
                     button instanceof AlternativeDisplayItem alt ? alt.displayItem() : button.getItem()
@@ -397,13 +493,24 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
     }
 
     /**
+     * Set a slot in the inventory to an {@link ItemStack}.
+     *
+     * @param position The position to set this item in.
+     * @param creator  The {@link ItemCreator} to use to create the {@link ItemStack}.
+     * @see #forceSet(int, int, ItemCreator)
+     */
+    public final void forceSet(@NotNull final InventoryPosition position, @NotNull final ItemCreator.ItemCreatorBuilder creator) {
+        forceSet(position.row(), position.column(), creator.build().make());
+    }
+
+    /**
      * Forcefully sets a {@link Button} to an {@link InventoryPosition}.
      *
      * @param position The position to set this button too.
      * @param button   {@link Button The button} to set at this location
      * @see Button
      */
-    public final void forceSet(final InventoryPosition position, @NotNull final Button button) {
+    public final void forceSet(final InventoryPosition position, @NotNull final Button<T> button) {
         if (position == null) return;
         forceSet(position.row(), position.column(), button);
     }
@@ -447,6 +554,17 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
 
     /**
      * Set a slot in the inventory to an {@link ItemStack}.
+     *
+     * @param row     The row to set this stack in.
+     * @param column  The column to set this stack in.
+     * @param creator The {@link ItemCreator} to use to create the {@link ItemStack}.
+     */
+    public final void set(final int row, final int column, @NotNull final ItemCreator.ItemCreatorBuilder creator) {
+        set(row, column, creator.build().make());
+    }
+
+    /**
+     * Set a slot in the inventory to an {@link ItemStack}.
      * If the button has a permission, it will also check if the viewer has permission.
      *
      * @param row    The row to set this stack in.
@@ -454,7 +572,7 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
      * @param button The {@link Button} to use to get the {@link ItemStack} from.
      * @see Button#getItem()
      */
-    public final void set(final int row, final int column, @NotNull final Button button) {
+    public final void set(final int row, final int column, @NotNull final Button<T> button) {
         if (button.getPermission() != null)
             set(row, column, holder.hasPermission(button.getPermission()) ? button.getItem() : null);
         else set(row, column, button.getItem());
@@ -480,6 +598,17 @@ public abstract class MenuInventory<T extends MenuHolder> implements InventoryHo
      */
     public final void set(@NotNull final InventoryPosition position, @NotNull final ItemCreator creator) {
         set(position.row(), position.column(), creator.make());
+    }
+
+    /**
+     * Set a slot in the inventory to an {@link ItemStack}.
+     *
+     * @param position The position to set this item in.
+     * @param creator  The {@link ItemCreator} to use to create the {@link ItemStack}.
+     * @see #set(int, int, ItemCreator)
+     */
+    public final void set(@NotNull final InventoryPosition position, @NotNull final ItemCreator.ItemCreatorBuilder creator) {
+        set(position.row(), position.column(), creator.build().make());
     }
 
     /**

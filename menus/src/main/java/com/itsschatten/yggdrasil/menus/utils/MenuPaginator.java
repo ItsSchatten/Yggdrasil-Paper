@@ -11,7 +11,7 @@ import java.util.*;
  * @param <T> The object.
  */
 @Getter
-public final class PaginateMenu<T> {
+public final class MenuPaginator<T> {
 
     /**
      * The number of menus/pages.
@@ -22,6 +22,11 @@ public final class PaginateMenu<T> {
      */
     @NotNull
     private final Map<Integer, List<T>> pages;
+
+    /**
+     * The {@link T} values of this paginator.
+     */
+    private final List<T> values;
 
     /**
      * The size of the inventory.
@@ -38,9 +43,11 @@ public final class PaginateMenu<T> {
      * @param cellSize The size of the inventory.
      * @param values   The values that should be added to the inventory.
      */
-    public PaginateMenu(int cellSize, Iterable<T> values) {
+    public MenuPaginator(int cellSize, @NotNull Iterable<T> values) {
         this.cellSize = cellSize;
-        this.pages = fillPages(cellSize, new ArrayList<>((Collection<? extends T>) values));
+        this.values = new ArrayList<>();
+        values.forEach(this.values::add);
+        this.pages = fillPages(cellSize, this.values);
     }
 
     /**
@@ -49,20 +56,18 @@ public final class PaginateMenu<T> {
      * @param cellSize The size of the inventory.
      * @param values   The values that should be added to the inventory. (As a list.)
      */
-    public PaginateMenu(int cellSize, List<T> values) {
+    public MenuPaginator(int cellSize, Collection<T> values) {
         this.cellSize = cellSize;
-        this.pages = fillPages(cellSize, values);
+        this.values = new ArrayList<>(values);
+        this.pages = fillPages(cellSize, this.values);
     }
 
     /**
-     * @param cellSize The size of the inventory.
-     * @param values   The values that can be iterated through to get the page.
-     * @param <T>      What is in the list, and cna be iterated.
-     * @return The new page that was created.
+     * Recalculates the pages of this paginator.
      */
-    @NotNull
-    public static <T> Map<Integer, List<T>> page(int cellSize, Iterable<T> values) {
-        return new PaginateMenu<>(cellSize, values).getPages();
+    public void recalculate() {
+        this.pages.clear();
+        this.pages.putAll(fillPages(this.cellSize, this.values));
     }
 
     /**

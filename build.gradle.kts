@@ -16,33 +16,35 @@ description = "The library used in most of Paper Plugins coded by ItsSchatten."
 subprojects {
     plugins.apply("maven-publish")
 
-    // This 'if-else' statement is required to properly build the Bill of Materials.
-    if (!project.name.contains("bom", true)) {
-        plugins.apply("java-library")
+    if (!project.name.contains("plugin", true)) {
+        // This 'if-else' statement is required to properly build the Bill of Materials.
+        if (!project.name.contains("bom", true)) {
+            plugins.apply("java-library")
 
-        publishing {
-            publications {
-                create<MavenPublication>("maven") {
-                    from(components["java"])
-                    group = "$group"
-                    artifactId = rootProject.name + (
-                            if (project.name.equals("common", true))
-                                ""
-                            else
-                                "-" + project.name
-                            )
+            publishing {
+                publications {
+                    create<MavenPublication>("maven") {
+                        from(components["java"])
+                        group = "$group"
+                        artifactId = rootProject.name + (
+                                if (project.name.equals("common", true))
+                                    ""
+                                else
+                                    "-" + project.name
+                                )
+                    }
                 }
             }
-        }
-    } else {
-        plugins.apply("java-platform")
+        } else {
+            plugins.apply("java-platform")
 
-        publishing {
-            publications {
-                create<MavenPublication>("bom") {
-                    from(components["javaPlatform"])
-                    group = "$group"
-                    artifactId = rootProject.name + "-bom"
+            publishing {
+                publications {
+                    create<MavenPublication>("bom") {
+                        from(components["javaPlatform"])
+                        group = "$group"
+                        artifactId = rootProject.name + "-bom"
+                    }
                 }
             }
         }

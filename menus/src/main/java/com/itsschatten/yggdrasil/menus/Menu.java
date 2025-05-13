@@ -8,7 +8,9 @@ import com.itsschatten.yggdrasil.menus.types.PaginatedMenu;
 import com.itsschatten.yggdrasil.menus.types.interfaces.Animated;
 import com.itsschatten.yggdrasil.menus.types.interfaces.Ticking;
 import com.itsschatten.yggdrasil.menus.utils.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bukkit.Bukkit;
 import org.bukkit.event.inventory.ClickType;
@@ -30,6 +32,8 @@ import java.util.*;
 @ApiStatus.NonExtendable
 public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
 
+    // TODO: Come up with a way to only call close logic when fully closing the menu.
+
     /**
      * All registered buttons for this menu.
      */
@@ -46,15 +50,22 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
      */
     @NotNull
     private final OneTimeRunnable register;
-
-   /* @Getter
-    @Setter
-    @Accessors(fluent = true)
-    protected T holder;*/
-
+    /**
+     * A list of all {@link T} viewers of this menu. A view cannot manipulate the menu they are viewing.
+     */
     @Getter
     @Accessors(fluent = true)
     protected Set<T> viewers = new HashSet<>();
+
+    /**
+     * The reason this {@link Menu} was closed.
+     * Will always default back to {@link CloseReason#DEFAULT} when this menu is {@link #displayTo(MenuHolder)}.
+     */
+    @ApiStatus.Internal
+    @Setter(AccessLevel.PUBLIC)
+    @Getter(AccessLevel.PUBLIC)
+    @Accessors(fluent = true)
+    private CloseReason closeReason = CloseReason.DEFAULT;
 
     /**
      * Default constructor.
@@ -111,7 +122,7 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
      * Register a Button.
      *
      * @param button The {@link Button} to register.
-     * @return <code>true</code> if the button was unsuccessfully registered, <code>false</code> if it failed, or it was already registered.
+     * @return <code>true</code> if the button was unsuccessfully registered, <code>false</code> if it succeeded.
      */
     private boolean registerButton(Button<T> button) {
         if (buttons.contains(button)) {
@@ -146,7 +157,7 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
     /**
      * Refresh the menu, re-registering declared buttons and redraws the menu.
      */
-    public final void refresh() {
+    public void refresh() {
         // We cancel all running button tasks because after this point they will point to nothing and will cause
         // unexpected behavior with buttons.
         tasks.forEach((task) -> {
@@ -159,7 +170,7 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
         tasks.removeIf((task) -> task.getType() == ReschedulableTask.Type.BUTTON);
         buttons.clear();
 
-        makeButtons();
+        registerButtons(makeButtons());
         redraw();
     }
 
@@ -167,8 +178,7 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
      * Redraw the menu.
      */
     public final void redraw() {
-        drawButtons();
-        displayTo(holder());
+        formInventory();
     }
 
     /**
@@ -217,6 +227,12 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
     }
 
     /**
+     * Used to draw extra things to the menu that aren't necessarily menu buttons.
+     */
+    public void drawExtra() {
+    }
+
+    /**
      * Draws the buttons to the menu.
      *
      * @param toDraw A list of buttons to draw.
@@ -253,6 +269,7 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
      * @param from   The menu this switch is called from.
      */
     public void switchMenu(final T holder, final Menu<T> from) {
+        from.closeReason = CloseReason.SWITCH;
         displayTo(holder);
     }
 
@@ -262,6 +279,9 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
      * @param user The user to show the menu too.
      */
     public final void displayTo(final T user) {
+        // Revert the close reason to DEFAULT.
+        // If the close reason was changed, it's likely that is a reopening of this menu.
+        if (closeReason != CloseReason.DEFAULT) this.closeReason = CloseReason.DEFAULT;
         holder(user);
 
         if (!register.hasBeenRun()) {
@@ -282,7 +302,6 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
                 }
             }
         } else {
-            registerButtons(makeButtons());
             if (!tasks.isEmpty()) {
                 Bukkit.getScheduler().runTask(Utils.getInstance(), () -> tasks.forEach(ReschedulableTask::restart));
             }
@@ -346,6 +365,14 @@ public abstract class Menu<T extends MenuHolder> extends MenuInventory<T> {
      * @param user The user that closed this menu.
      */
     public void onClose(final T user) {
+    }
+
+    /**
+     * What happens when the {@link Menu} is switched to.
+     *
+     * @param user The user that switched the menu.
+     */
+    public void onSwitch(final T user) {
     }
 
     /**

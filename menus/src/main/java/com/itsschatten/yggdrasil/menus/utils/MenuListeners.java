@@ -34,7 +34,7 @@ public final class MenuListeners implements Listener {
      * @param event The event.
      */
     @EventHandler
-    public void onPlayerLeave(final PlayerQuitEvent event) {
+    public void onPlayerLeave(final @NotNull PlayerQuitEvent event) {
         event.getPlayer().removeMetadata("menu_holder", Utils.getInstance());
     }
 
@@ -69,7 +69,11 @@ public final class MenuListeners implements Listener {
                 }
 
                 // Call onClose code.
-                menu.onClose(user);
+                if (menu.closeReason() == CloseReason.DEFAULT) {
+                    menu.onClose(user);
+                } else if (menu.closeReason() == CloseReason.SWITCH) {
+                    menu.onSwitch(user);
+                }
 
                 // Handle closing the menu for the viewer.
                 if (!menu.viewers().isEmpty()) {

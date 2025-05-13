@@ -13,6 +13,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -53,12 +54,6 @@ public abstract class StandardMenu<T extends MenuHolder> extends Menu<T> {
     }
 
     /**
-     * Used to draw extra things to the menu that aren't necessarily menu buttons.
-     */
-    public void drawExtra() {
-    }
-
-    /**
      * {@inheritDoc}
      *
      * @param position The position to check.
@@ -72,7 +67,7 @@ public abstract class StandardMenu<T extends MenuHolder> extends Menu<T> {
         // In honesty, the permission check is kinda redundant, as there is no "weight"
         // to button registering, instead just when the button is registered.
         return buttons().stream()
-                .filter(button -> button.getPermission() != null && !holder().hasPermission(button.getPermission()))
+                .filter(button -> button.getPermission() == null || holder().hasPermission(button.getPermission()))
                 .anyMatch((button) -> button.getPosition().equals(position));
     }
 
@@ -80,6 +75,16 @@ public abstract class StandardMenu<T extends MenuHolder> extends Menu<T> {
     @Override
     public final Button<T> getButton(ItemStack stack, InventoryPosition position) {
         return getButtonImpl(stack, position, buttons());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return Returns an empty {@link List}.
+     */
+    @Override
+    public List<Button<T>> makeButtons() {
+        return Collections.emptyList();
     }
 
     /**

@@ -121,9 +121,9 @@ public abstract class PageMenu<T extends MenuHolder> extends StandardMenu<T> {
     @Override
     public boolean isSlotTakenByButton(InventoryPosition position) {
         return registeredPageButtons.stream()
-                .filter(button -> button.getPermission() != null && !holder().hasPermission(button.getPermission()))
+                .filter(button -> button.getPermission() == null || holder().hasPermission(button.getPermission()))
                 .anyMatch(button -> button.getPosition().equals(position))
-                && super.isSlotTakenByButton(position);
+                || super.isSlotTakenByButton(position);
     }
 
     /**

@@ -3,6 +3,7 @@ package com.itsschatten.yggdrasil.anvilgui;
 import com.itsschatten.yggdrasil.StringUtil;
 import com.itsschatten.yggdrasil.anvilgui.interfaces.ClickHandler;
 import com.itsschatten.yggdrasil.anvilgui.interfaces.Response;
+import com.itsschatten.yggdrasil.menus.utils.CloseReason;
 import com.itsschatten.yggdrasil.menus.utils.MenuHolder;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -312,6 +313,10 @@ public final class AnvilGUI {
          */
         public AnvilGUI open(final MenuHolder holder) {
             Validate.notNull(holder, "Player cannot be null!");
+
+            if (holder.getCurrentMenu() != null) {
+                holder.getCurrentMenu().closeReason(CloseReason.ANVIL);
+            }
 
             configure();
 

@@ -1,0 +1,4 @@
+name: YggdrasilPlugin
+version: ${version}
+main: com.itsschatten.yggdrasil.YggdrasilPlugin
+api-version: '1.21'
